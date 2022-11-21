@@ -58,6 +58,6 @@ export class Order {
   @DeleteDateColumn()
   deletedAt: Date;
 
-  @Column({ default: true, name: 'Active' })
+  @Column({ default: true })
   isActive: boolean;
 }
