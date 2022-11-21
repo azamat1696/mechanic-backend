@@ -58,6 +58,11 @@ import { extname } from 'path';
 import { diskStorage } from 'multer';
 import { basename } from 'path';
 
+interface Products {
+  productId: number;
+  quantity: number;
+}
+
 @Controller('merchants')
 export class MerchantsController {
   constructor(
@@ -376,10 +381,7 @@ export class MerchantsController {
 
   @Post('delete-supplier')
   @UseGuards(JwtAuthGuard)
-  async deleteSupplier(
-    @Body() deleteSupplierDto: DeleteSupplierDto,
-    @Request() req: any
-  ) {
+  async deleteSupplier(@Body() deleteSupplierDto: DeleteSupplierDto) {
     console.log('deleteSupplierDto', deleteSupplierDto);
     const { supplierId } = deleteSupplierDto;
     return await this.suppliersService.remove(supplierId);
@@ -430,7 +432,7 @@ export class MerchantsController {
         const foundOrder = await this.purchaseService.findOne(id);
 
         // Loop over each product
-        products.forEach(async (p): Promise<any> => {
+        products.forEach(async (p): Promise<Products> => {
           const { productId, quantity } = p;
           const foundProduct = await this.productsService.findOne(productId);
           if (foundProduct) {
