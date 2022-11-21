@@ -1,16 +1,17 @@
 /* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+// Services
 import { UsersService } from './services/users.service';
-// import { UsersController } from './controllers/users.controller';
+
+// Entity
 import { User } from './user.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
   providers: [UsersService],
-  controllers: [
-    /*UsersController*/
-  ],
+  controllers: [],
   exports: [UsersService],
 })
 export class UsersModule {}
