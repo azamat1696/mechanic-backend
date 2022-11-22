@@ -26,7 +26,6 @@ export class Merchant {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // _________
   // RELATIONS
   // _________
 
