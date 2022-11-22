@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { Supplier } from '../supplier.entity';
 
 // Dto
-import { CreateSupplierDto } from '../dto/create.dto';
+import { CreateSupplierDto } from '../../merchants/dto/suppliers/create.dto';
 import { UpdateSupplierDto } from '../dto/update.dto';
 
 @Injectable()

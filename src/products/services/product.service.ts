@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { Product } from '../product.entity';
 
 // Dtos
-import { CreateProductDto } from '../../merchants/dto/createProduct.dto';
+import { CreateProductDto } from '../../merchants/dto/merchants/createProduct.dto';
 
 interface Supplier {
   id: number;
