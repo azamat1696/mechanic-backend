@@ -88,7 +88,7 @@ export class MerchantsController {
     private dataSource: DataSource
   ) {}
 
-  // Get all merchants9
+  // Get all merchants
   @Get()
   getUsers() {
     return this.merchantsService.findAll();
@@ -170,20 +170,11 @@ export class MerchantsController {
     @UploadedFile() file: Express.Multer.File,
     @Response() response: any
   ) {
-    // console.log('request object', req.user);
-    // console.log('req.body', req.body);
-    console.log('createProductDto', createProductDto);
-    // console.log('file', file);
-
     const { email } = req.user;
+    const { supplierId } = createProductDto;
+
     const foundMerchant = await this.merchantsService.findByEmail(email);
-
-    const foundSupplier = await this.suppliersService.findOne(
-      createProductDto.supplierId
-    );
-    // console.log('foundMerchant', foundMerchant);
-
-    console.log('foundSupplier', foundSupplier);
+    const foundSupplier = await this.suppliersService.findOne(supplierId);
 
     if (foundMerchant && foundSupplier) {
       const image =
@@ -254,7 +245,8 @@ export class MerchantsController {
   @Post('delete-single-product')
   @UseGuards(JwtAuthGuard)
   async deleteSingleProduct(@Body() deleteProductDto: DeleteProductDto) {
-    return this.productsService.remove(Number(deleteProductDto.productId));
+    const { productId } = deleteProductDto;
+    return this.productsService.remove(Number(productId));
   }
 
   @Get('find-products')
@@ -268,9 +260,9 @@ export class MerchantsController {
     @Body() productsBySupplierDto: ProductsBySupplierDto,
     @Response() res
   ) {
-    console.log('productsBySupplierDto', productsBySupplierDto);
+    const { supplierId } = productsBySupplierDto;
     const suppliers = await this.productsService.getProductsBySupplier(
-      productsBySupplierDto.supplierId
+      supplierId
     );
 
     if (suppliers) {
@@ -345,7 +337,8 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard)
   async deleteOrder(@Request() req) {
     console.log('req.body', req.body.id);
-    return this.orderService.remove(req.body.id);
+    const { id } = req.body;
+    return this.orderService.remove(id);
   }
 
   @Post('update-order')
@@ -353,8 +346,9 @@ export class MerchantsController {
   async updateOrder(@Body() updateOrderDto: UpdateOrderDto) {
     const { orderId } = updateOrderDto;
     const foundOrder = await this.orderService.findOne(orderId);
+    const { id } = foundOrder;
     if (foundOrder) {
-      return await this.orderService.update(foundOrder.id, updateOrderDto);
+      return await this.orderService.update(id, updateOrderDto);
     }
   }
   /*
@@ -377,9 +371,6 @@ export class MerchantsController {
   ) {
     const { email } = req.user;
     const merchant = await this.merchantsService.findByEmail(email);
-
-    merchant && console.log('merchant', merchant);
-
     if (merchant) {
       return this.suppliersService.create(createSupplierDto, merchant);
     }
@@ -389,12 +380,10 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard)
   async getSuppliersByMerchant(@Request() req: any, @Response() res: any) {
     const { email } = req.user;
-    const merch = await this.merchantsService.findByEmail(email);
-
-    if (merch) {
-      const cust = await this.suppliersService.findSuppliersByMerchant(
-        merch.id
-      );
+    const merchant = await this.merchantsService.findByEmail(email);
+    const { id } = merchant;
+    if (merchant) {
+      const cust = await this.suppliersService.findSuppliersByMerchant(id);
       return res.json(cust);
     }
   }
@@ -402,17 +391,13 @@ export class MerchantsController {
   @Post('delete-supplier')
   @UseGuards(JwtAuthGuard)
   async deleteSupplier(@Body() deleteSupplierDto: DeleteSupplierDto) {
-    console.log('deleteSupplierDto', deleteSupplierDto);
     const { supplierId } = deleteSupplierDto;
     return await this.suppliersService.remove(supplierId);
   }
 
   @Post('update-supplier')
   @UseGuards(JwtAuthGuard)
-  async updateSupplier(
-    @Body() updateSupplierDto: UpdateSupplierDto,
-    @Request() req: any
-  ) {
+  async updateSupplier(@Body() updateSupplierDto: UpdateSupplierDto) {
     return await this.suppliersService.update(updateSupplierDto);
   }
 
@@ -467,11 +452,6 @@ export class MerchantsController {
         });
       }
     }
-
-    // res.json({ result: createdPurchaseDetail });
-
-    // const allProductsBySupplier =
-    //   await this.productsService.getProductsBySupplier(supplierId);
   }
 
   // Get Purchase Orders by Merchant
@@ -485,7 +465,7 @@ export class MerchantsController {
       const { id } = merchant;
       const orders = await this.purchaseService.getMerchantOrders(id);
       if (orders) {
-        res.json({ orders: orders });
+        res.json({ orders });
       }
     }
   }
@@ -517,7 +497,6 @@ export class MerchantsController {
   _________
   */
 
-  // Create a customer by merchant
   @Post('create-customer')
   @UseGuards(JwtAuthGuard)
   @UsePipes(ValidationPipe)
@@ -526,62 +505,59 @@ export class MerchantsController {
     @Response() res: any,
     @Body() createUsersDto: CreateUsersDto
   ) {
-    // console.log('merchant', req.user.email);
-    // console.log('createUsersDto', createUsersDto);
-    const foundMerchant = await this.merchantsService.findByEmail(
-      req.user.email
-    );
+    const { email } = req.user;
+    const foundMerchant = await this.merchantsService.findByEmail(email);
 
     if (foundMerchant) {
-      // create user
       const createdUser = await this.usersService.add(
         createUsersDto,
         foundMerchant
       );
-      return res.json(createdUser);
+      if (createdUser) {
+        return res.json(createdUser);
+      }
     }
   }
 
-  // Get All customers by merchant
   @Get('customers')
   @UseGuards(JwtAuthGuard)
   async getCustomersByMerchant(@Request() req: any, @Response() res: any) {
     const { email } = req.user;
-    const merch = await this.merchantsService.findByEmail(email);
-    if (merch) {
-      const cust = await this.usersService.findCustomersByMerchant(merch.id);
-      return res.json(cust);
+    const merchant = await this.merchantsService.findByEmail(email);
+    if (merchant) {
+      const { id } = merchant;
+      const customer = await this.usersService.findCustomersByMerchant(id);
+      if (customer) {
+        return res.json(customer);
+      }
     }
   }
 
-  // Delete Customer
   @Post('delete-customer')
   @UseGuards(JwtAuthGuard)
   async deleteCustomerByMerchant(
     @Body() deleteCustomerDto: DeleteCustomerDto,
-    @Request() req: any,
     @Response() res: any
   ) {
-    console.log('deleteCustomerDto', deleteCustomerDto);
-    const deletedUser = await this.usersService.remove(
-      deleteCustomerDto.customerId
-    );
-    res.json({ deletedUser });
+    const { customerId } = deleteCustomerDto;
+    const deletedUser = await this.usersService.remove(customerId);
+    if (deletedUser) {
+      return res.json({ deletedUser });
+    }
   }
 
-  // Update Customer
   @Post('update-customer')
   @UseGuards(JwtAuthGuard)
   @UsePipes(ValidationPipe)
   async updateCustomerByMerchant(
-    @Request() req: any,
     @Response() res: any,
     @Body() updateUsersDto: UpdateUsersDto
   ) {
-    console.log('updateUsersDto', updateUsersDto);
     const { id } = updateUsersDto;
-    const foundUsers = await this.usersService.update(id, updateUsersDto);
-    res.json(foundUsers);
+    const foundUser = await this.usersService.update(id, updateUsersDto);
+    if (foundUser) {
+      return res.json(foundUser);
+    }
   }
 
   /*
