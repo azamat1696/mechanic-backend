@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import {
+  IsBoolean,
   IsNotEmpty,
   IsString,
   MinLength,
@@ -7,24 +8,26 @@ import {
   IsNumber,
 } from 'class-validator';
 
-export class CreatePurchaseDto {
+export class UpdateOrderDto {
   @IsString()
   @IsNotEmpty()
-  @MinLength(3)
+  @MinLength(5)
   name: string;
 
   @IsInt()
-  @IsNumber()
   @IsNotEmpty()
-  supplierId: number;
+  orderId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(5)
+  description: string;
 
   @IsInt()
   @IsNumber()
-  @IsNotEmpty()
-  productId: number;
+  userId: number;
 
-  @IsInt()
-  @IsNumber()
+  @IsBoolean()
   @IsNotEmpty()
-  purchase_quantity: number;
+  isActive: boolean;
 }

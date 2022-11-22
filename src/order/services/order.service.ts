@@ -6,9 +6,6 @@ import { Repository } from 'typeorm';
 // Entities
 import { Order } from '../order.entity';
 
-// Dtos
-import { UpdateOrderDto } from '../dto/UpdateOrder.dto';
-
 @Injectable()
 export class OrderService {
   constructor(
@@ -53,7 +50,7 @@ export class OrderService {
     return await this.orderRepository.save(newOrder);
   }
 
-  async update(id: number, updateOrderDto: UpdateOrderDto) {
+  async update(id: number, updateOrderDto) {
     const updatedOrder = await this.orderRepository.update(id, updateOrderDto);
     if (updatedOrder) {
       return updatedOrder;

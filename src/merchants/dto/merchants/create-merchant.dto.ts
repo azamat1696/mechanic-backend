@@ -8,7 +8,7 @@ import {
   IsEnum,
 } from 'class-validator';
 
-import { MerchantRole } from '../merchant.entity';
+import { MerchantRole } from '../../merchant.entity';
 
 export class CreateMerchantsDto {
   @IsString()

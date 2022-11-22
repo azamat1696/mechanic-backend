@@ -7,8 +7,7 @@ import { Repository } from 'typeorm';
 import { User } from '../user.entity';
 
 // Dtos
-import { UpdateUsersDto } from '../dtos/UpdateUsers.dto';
-import { CreateUsersDto } from '../dtos/CreateUsers.dto';
+import { CreateUsersDto } from '../../merchants/dto/users/create.dto';
 
 // Utils
 import { encodePassword } from '../../utils/encodePassword';
@@ -71,7 +70,7 @@ export class UsersService {
     }
   }
 
-  async update(id: number, updateUsersDto: UpdateUsersDto) {
+  async update(id: number, updateUsersDto) {
     const updatedUser = await this.usersRepository.update(id, updateUsersDto);
     console.log('updatedUser', updatedUser);
 

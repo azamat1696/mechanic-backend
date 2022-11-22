@@ -30,23 +30,34 @@ import { UsersService } from '../../users/services/users.service';
 import { PurchaseDetailService } from '../../purchase-detail/services/purchase-detail.service';
 
 // DTOs
-import { UpdateMerchantsDto } from '../dto/update-merchant.dto';
-import { CreateMerchantsDto } from '../dto/create-merchant.dto';
-import { DeleteProductDto } from '../dto/deleteSingleProduct';
-import { CreateSupplierDto } from '../../suppliers/dto/create.dto';
-import { CreateProductDto } from '../../merchants/dto/createProduct.dto';
-import { FindProductDto } from '../../products/dto/FindProduct.dto';
-import { UpdateProductDto } from '../../products/dto/UpdateProduct.dto';
-import { CreateUsersDto } from '../../users/dtos/CreateUsers.dto';
-import { DeleteCustomerDto } from '../../merchants/dto/deleteCustomer';
-import { UpdateUsersDto } from '../../users/dtos/UpdateUsers.dto';
-import { DeleteSupplierDto } from '../../suppliers/dto/delete.dto';
-import { UpdateSupplierDto } from '../../suppliers/dto/update.dto';
-import { ProductsBySupplierDto } from '../../merchants/dto/productsBySupplier.dto';
-import { CreatePurchaseOrderDto } from '../dto/purchases/create.dto';
-import { CreateOrderDto } from '../dto/orders/create.dto';
-import { GetMerchantDto } from '../dto/getMerchant.dto';
+// Merchants
+import { UpdateMerchantsDto } from '../dto/merchants/update-merchant.dto';
+import { CreateMerchantsDto } from '../dto/merchants/create-merchant.dto';
+import { CreateProductDto } from '../dto/merchants/createProduct.dto';
+import { DeleteCustomerDto } from '../dto/merchants/deleteCustomer';
+import { GetMerchantDto } from '../dto/merchants/getMerchant.dto';
 
+// Suppliers
+import { CreateSupplierDto } from '../dto/suppliers/create.dto';
+import { DeleteSupplierDto } from '../dto/suppliers/delete.dto';
+import { UpdateSupplierDto } from '../dto/suppliers/update.dto';
+import { ProductsBySupplierDto } from '../dto/products/productsBySupplier.dto';
+
+// Users
+import { CreateUsersDto } from '../dto/users/create.dto';
+import { UpdateUsersDto } from '../dto/users/update.dto';
+
+// Products
+import { FindProductDto } from '../dto/products/FindProduct.dto';
+import { UpdateProductDto } from '../dto/products/UpdateProduct.dto';
+import { DeleteProductDto } from '../dto/products/deleteSingleProduct';
+
+// Purchases
+import { CreatePurchaseOrderDto } from '../dto/purchases/create.dto';
+
+// Orders
+import { CreateOrderDto } from '../dto/orders/create.dto';
+import { UpdateOrderDto } from '../dto/orders/UpdateOrder.dto';
 // Guards
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
@@ -77,7 +88,7 @@ export class MerchantsController {
     private dataSource: DataSource
   ) {}
 
-  // Get all merchants
+  // Get all merchants9
   @Get()
   getUsers() {
     return this.merchantsService.findAll();
@@ -337,6 +348,15 @@ export class MerchantsController {
     return this.orderService.remove(req.body.id);
   }
 
+  @Post('update-order')
+  @UseGuards(JwtAuthGuard)
+  async updateOrder(@Body() updateOrderDto: UpdateOrderDto) {
+    const { orderId } = updateOrderDto;
+    const foundOrder = await this.orderService.findOne(orderId);
+    if (foundOrder) {
+      return await this.orderService.update(foundOrder.id, updateOrderDto);
+    }
+  }
   /*
   __________
   ORDERS
@@ -465,7 +485,6 @@ export class MerchantsController {
       const { id } = merchant;
       const orders = await this.purchaseService.getMerchantOrders(id);
       if (orders) {
-        console.log('orders', orders);
         res.json({ orders: orders });
       }
     }

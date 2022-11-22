@@ -7,8 +7,8 @@ import { Repository } from 'typeorm';
 import { Merchant } from '../merchant.entity';
 
 // Dtos
-import { CreateMerchantsDto } from '../dto/create-merchant.dto';
-import { UpdateMerchantsDto } from '../dto/update-merchant.dto';
+import { CreateMerchantsDto } from '../dto/merchants/create-merchant.dto';
+import { UpdateMerchantsDto } from '../dto/merchants/update-merchant.dto';
 
 // Utils
 import { encodePassword } from '../../utils/encodePassword';
