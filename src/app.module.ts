@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Entities
 import { User } from './users/user.entity';
@@ -45,6 +46,7 @@ import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
       ],
       synchronize: true,
     }),
+    EventEmitterModule.forRoot(),
     UsersModule,
     AuthModule,
     MerchantsModule,

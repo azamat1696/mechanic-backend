@@ -18,6 +18,10 @@ import {
 import { DataSource } from 'typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
+// Event Emitter
+import { MinimumStockEvent } from '../event-emitter/event-emitter';
 
 // Services
 import { MerchantsService } from '../services/merchants.service';
@@ -85,6 +89,7 @@ export class MerchantsController {
     private readonly purchaseService: PurchaseService,
     private readonly usersService: UsersService,
     private readonly purchaseDetailService: PurchaseDetailService,
+    private eventEmitter: EventEmitter2,
     private dataSource: DataSource
   ) {}
 
@@ -104,17 +109,32 @@ export class MerchantsController {
     res.json({ products });
   }
 
-  // Stock View
+  /*
+  __________
+  STOCK VIEW
+  ----------
+  */
+
   @Post('stock')
   @UseGuards(JwtAuthGuard)
   async getData(@Body() getMerchantDto: GetMerchantDto) {
+    // Emit Low Stock Event
+    this.eventEmitter.emit('min.reached', new MinimumStockEvent());
+    // Emit Low Stock Event
     const { merchantId: mId } = getMerchantDto;
     const stockView = await this.dataSource.query(
       queryStockByMerchant(Number(mId))
     );
+    console.log('stockView', stockView);
+
     return stockView;
   }
-  // Stock View
+
+  /*
+  __________
+  STOCK VIEW
+  ----------
+  */
 
   // Create merchant
   @Post('register')

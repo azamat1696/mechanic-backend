@@ -52,6 +52,11 @@ export class Product {
   @Column()
   supplierId: number;
 
+  @Column({
+    default: 3,
+  })
+  minimum: number;
+
   @Column()
   costPrice: number;
 
