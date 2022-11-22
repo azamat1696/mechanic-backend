@@ -8,7 +8,6 @@ import { Supplier } from '../supplier.entity';
 
 // Dto
 import { CreateSupplierDto } from '../../merchants/dto/suppliers/create.dto';
-import { UpdateSupplierDto } from '../dto/update.dto';
 
 @Injectable()
 export class SupplierService {
@@ -53,7 +52,7 @@ export class SupplierService {
     return await this.supplierRepository.findOneBy({ id });
   }
 
-  async update(updateSupplierDto: UpdateSupplierDto) {
+  async update(updateSupplierDto) {
     console.log('updateSupplierDto', updateSupplierDto);
     const { id } = updateSupplierDto;
     return await this.supplierRepository.update(id, updateSupplierDto);
