@@ -14,11 +14,32 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  StreamableFile,
+  Header,
+  Res,
+  Render,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  createWriteStream,
+  writeFile,
+  createReadStream,
+  readFileSync,
+  readFile,
+} from 'fs';
+import { join } from 'path';
+import type { Response as ResponseType } from 'express';
+
+// Pdf
+import { jsPDF } from 'jspdf';
+import { compileTemplate } from '../.././utils/helpers';
+import puppeteer from 'puppeteer';
+
+// View Engine
+import { handlebars } from 'hbs';
 
 // Event Emitter
 import { MinimumStockEvent } from '../event-emitter/event-emitter';
@@ -58,6 +79,7 @@ import { DeleteProductDto } from '../dto/products/deleteSingleProduct';
 
 // Purchases
 import { CreatePurchaseOrderDto } from '../dto/purchases/create.dto';
+import { PurchaseIdDto } from '../dto/purchases/purchaseId.dto';
 
 // Orders
 import { CreateOrderDto } from '../dto/orders/create.dto';
@@ -125,7 +147,7 @@ export class MerchantsController {
     const stockView = await this.dataSource.query(
       queryStockByMerchant(Number(mId))
     );
-    console.log('stockView', stockView);
+    // console.log('stockView', stockView);
 
     return stockView;
   }
@@ -584,5 +606,49 @@ export class MerchantsController {
   _________
   CUSTOMERS
   _________
+  */
+
+  /*
+  _____________________
+  PURCHASE ORDER - FILE
+  _____________________
+  */
+
+  @Post('template')
+  @UseGuards(JwtAuthGuard)
+  // @Render('template')
+  async root(
+    @Request() req: any,
+    @Response() res: any,
+    @Body() purchaseIdDto: PurchaseIdDto
+  ) {
+    const { email } = req.user;
+    const merchant = await this.merchantsService.findByEmail(email);
+
+    const { orderId } = purchaseIdDto;
+
+    if (merchant) {
+      const { id } = merchant;
+      const orders = await this.purchaseService.getMerchantOrders(id);
+
+      if (orders) {
+        const foundOrder = orders.find((o: any) => o.id === orderId);
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        const content = await compileTemplate('template');
+
+        if (content) {
+          await page.setContent(content({ order: foundOrder }));
+          const pdf = await page.pdf();
+          console.log('Check =>', pdf);
+          return res.send(pdf);
+        }
+      }
+    }
+  }
+  /*
+  _____________________
+  PURCHASE ORDER - FILE
+  _____________________
   */
 }
