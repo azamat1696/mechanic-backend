@@ -21,12 +21,13 @@ export class PurchaseDetail {
   // _________
   // RELATIONS
   // _________
-  @ManyToOne(() => Purchase)
+  @ManyToOne(() => Purchase, {
+    onDelete: 'CASCADE',
+  })
   purchase: Purchase;
 
   @ManyToOne(() => Product)
   product: Product;
-
   // _________
   // RELATIONS
   // _________
@@ -35,7 +36,13 @@ export class PurchaseDetail {
   productId: number;
 
   @Column()
+  purchaseId: number;
+
+  @Column()
   quantity: number;
+
+  @Column()
+  price: number;
 
   @CreateDateColumn()
   createdAt: Date;

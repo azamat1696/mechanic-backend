@@ -35,7 +35,7 @@ export class Purchase {
   merchant: Merchant;
 
   @OneToMany(() => PurchaseDetail, (purchaseDetail) => purchaseDetail.purchase)
-  purchaseDetail: PurchaseDetail;
+  purchaseDetail: PurchaseDetail[];
   // _________
   // RELATIONS
   // _________

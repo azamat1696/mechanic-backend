@@ -28,6 +28,11 @@ export class CreateProductDto {
   @IsNotEmpty()
   supplierId: number;
 
+  @IsInt()
+  @IsNumber()
+  @IsNotEmpty()
+  minimum: number;
+
   // @IsBoolean()
   // @IsNotEmpty()
   // isActive: boolean;

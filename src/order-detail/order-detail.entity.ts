@@ -22,7 +22,9 @@ export class OrderDetail {
   // RELATIONS
   // _________
 
-  @ManyToOne(() => Order, (order) => order.orderDetail)
+  @ManyToOne(() => Order, (order) => order.orderDetail, {
+    onDelete: 'CASCADE',
+  })
   order: Order;
 
   @ManyToOne(() => Product, (product) => product.orderDetail)
@@ -31,6 +33,12 @@ export class OrderDetail {
   // _________
   // RELATIONS
   // _________
+
+  @Column()
+  orderId: number;
+
+  @Column()
+  productId: number;
 
   @Column()
   quantity: number;

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -15,6 +16,8 @@ import { SupplierService } from '../suppliers/services/suppliers.service';
 import { PurchaseService } from '../purchases/services/purchases.service';
 import { UsersService } from '../users/services/users.service';
 import { PurchaseDetailService } from '../purchase-detail/services/purchase-detail.service';
+import { JobService } from '../job/services/jobs.service';
+import { JobDetailService } from '../job-detail/services/job-detail.service';
 
 // Entities
 import { Merchant } from './merchant.entity';
@@ -25,6 +28,8 @@ import { Supplier } from '../suppliers/supplier.entity';
 import { Purchase } from 'src/purchases/purchase.entity';
 import { User } from '../users/user.entity';
 import { PurchaseDetail } from '../purchase-detail/purchase-detail.entity';
+import { Job } from '../job/job.entity';
+import { JobDetail } from '../job-detail/job-detail.entity';
 
 @Module({
   imports: [
@@ -41,6 +46,8 @@ import { PurchaseDetail } from '../purchase-detail/purchase-detail.entity';
       Purchase,
       User,
       PurchaseDetail,
+      Job,
+      JobDetail,
     ]),
   ],
   controllers: [MerchantsController],
@@ -53,6 +60,8 @@ import { PurchaseDetail } from '../purchase-detail/purchase-detail.entity';
     PurchaseService,
     UsersService,
     PurchaseDetailService,
+    JobService,
+    JobDetailService,
   ],
   exports: [MerchantsService],
 })

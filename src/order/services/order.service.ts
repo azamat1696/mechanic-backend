@@ -19,9 +19,9 @@ export class OrderService {
 
   // Find all by merchantId
   async findByMerchant(id: any) {
-    return await this.orderRepository.find({
+    const ordersByMerch = await this.orderRepository.find({
       where: {
-        merchant: id,
+        merchantId: id,
       },
       relations: {
         orderDetail: true,
@@ -29,6 +29,8 @@ export class OrderService {
         merchant: false,
       },
     });
+    console.log('ordersByMerch', ordersByMerch);
+    return ordersByMerch;
   }
   // Find all by merchantId
 
@@ -37,8 +39,8 @@ export class OrderService {
   }
 
   async remove(id: number) {
-    return await this.orderRepository.softDelete({ id });
-    // return await this.orderRepository.delete(id);
+    // return await this.orderRepository.softDelete({ id });
+    return await this.orderRepository.delete(id);
   }
 
   async create(merchant: any, user: any, createOrderDto: any) {

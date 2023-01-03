@@ -57,7 +57,6 @@ export class ProductService {
     return savedProduct;
   }
 
-  // Get products created by merchant
   async getProductsByMerch(merchant) {
     const id = merchant.id;
     const products = await this.productRepository.find({
@@ -83,7 +82,6 @@ export class ProductService {
     if (foundProduct) {
       const updatedProduct = await this.productRepository.update(id, {
         ...updateProductDto,
-        // product_code: updateProductDto.productCode,
       });
       if (updatedProduct) {
         return await this.productRepository.findOneBy({ id });

@@ -38,4 +38,9 @@ export class PurchaseService {
 
     return orders;
   }
+
+  async remove(id: number) {
+    // return await this.orderRepository.softDelete({ id });
+    return await this.purchaseRepository.delete(id);
+  }
 }

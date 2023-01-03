@@ -14,32 +14,15 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  StreamableFile,
-  Header,
-  Res,
-  Render,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  createWriteStream,
-  writeFile,
-  createReadStream,
-  readFileSync,
-  readFile,
-} from 'fs';
-import { join } from 'path';
-import type { Response as ResponseType } from 'express';
+import { Express, response } from 'express';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 // Pdf
-import { jsPDF } from 'jspdf';
 import { compileTemplate } from '../.././utils/helpers';
 import puppeteer from 'puppeteer';
-
-// View Engine
-import { handlebars } from 'hbs';
 
 // Event Emitter
 import { MinimumStockEvent } from '../event-emitter/event-emitter';
@@ -53,6 +36,11 @@ import { SupplierService } from '../../suppliers/services/suppliers.service';
 import { PurchaseService } from '../../purchases/services/purchases.service';
 import { UsersService } from '../../users/services/users.service';
 import { PurchaseDetailService } from '../../purchase-detail/services/purchase-detail.service';
+import { JobService } from '../../job/services/jobs.service';
+import { JobDetailService } from '../../job-detail/services/job-detail.service';
+
+// Events
+import { OrderCreatedEvent } from '../events/orderCreated.event';
 
 // DTOs
 // Merchants
@@ -82,8 +70,22 @@ import { CreatePurchaseOrderDto } from '../dto/purchases/create.dto';
 import { PurchaseIdDto } from '../dto/purchases/purchaseId.dto';
 
 // Orders
-import { CreateOrderDto } from '../dto/orders/create.dto';
+import { CreateOrderDto } from '../dto/orders/CreateOrder.dto';
 import { UpdateOrderDto } from '../dto/orders/UpdateOrder.dto';
+import { OrderDetailByOrder } from '../dto/orderDetail/orderDetailByOrder.dto';
+import { OrderIdDto } from '../dto/orders/orderId.dto';
+
+// OrderDetail
+import { DeleteOrderDetail } from '../dto/orderDetail/deleteOrderDetail.dto';
+import { UpdateOrderDetail } from '../dto/orderDetail/updateOrderDetail.dto';
+import { UpdatedProducts } from '../dto/orderDetail/updatedProducts.dto';
+
+// PurchaseOrderDetail
+import { UpdatePurchaseOrderDetail } from '../dto/purchaseDetail/purchaseDetail.dto';
+
+// Jobs
+import { CreateJobDto } from '../dto/jobs/createJob.dto';
+
 // Guards
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
@@ -111,18 +113,17 @@ export class MerchantsController {
     private readonly purchaseService: PurchaseService,
     private readonly usersService: UsersService,
     private readonly purchaseDetailService: PurchaseDetailService,
+    private readonly jobService: JobService,
+    private readonly jobDetailService: JobDetailService,
     private eventEmitter: EventEmitter2,
     private dataSource: DataSource
   ) {}
 
-  // Get all merchants
   @Get()
   getUsers() {
     return this.merchantsService.findAll();
   }
-  // Get all merchants
 
-  // List products by merchant
   @Get('list-products')
   @UseGuards(JwtAuthGuard)
   async findMerchProducts(@Request() req, @Response() res) {
@@ -158,16 +159,13 @@ export class MerchantsController {
   ----------
   */
 
-  // Create merchant
   @Post('register')
   @UsePipes(ValidationPipe)
   createMerchant(@Body() createMerchantsDto: CreateMerchantsDto) {
     console.log('Password', createMerchantsDto.password);
     return this.merchantsService.add(createMerchantsDto);
   }
-  // Create merchant
 
-  // Update merchant
   @Put(':id')
   updateMerchant(
     @Param('id') id: number,
@@ -175,14 +173,11 @@ export class MerchantsController {
   ) {
     return this.merchantsService.update(id, updateMerchantDto);
   }
-  // Update merchant
 
-  // Delete merchant
   @Delete(':id')
   deleteMerchant(@Param('id') id: number) {
     return this.merchantsService.remove(id);
   }
-  // Delete merchant
 
   /*
   __________
@@ -194,7 +189,7 @@ export class MerchantsController {
   @UsePipes(ValidationPipe)
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
-    FileInterceptor('photo', {
+    FileInterceptor('image', {
       storage: diskStorage({
         destination: './public/images',
         filename: function (req, image, cb) {
@@ -210,10 +205,12 @@ export class MerchantsController {
     @Body() createProductDto: CreateProductDto,
     @Request() req: any,
     @UploadedFile() file: Express.Multer.File,
-    @Response() response: any
+    @Response() res: any
   ) {
     const { email } = req.user;
     const { supplierId } = createProductDto;
+
+    console.log('createProduct', createProductDto);
 
     const foundMerchant = await this.merchantsService.findByEmail(email);
     const foundSupplier = await this.suppliersService.findOne(supplierId);
@@ -232,7 +229,7 @@ export class MerchantsController {
           image,
         }
       );
-      return response.json({ CreatedProduct: [savedProduct] });
+      return res.json({ CreatedProduct: [savedProduct] });
     } else {
       return 'merchant not found';
     }
@@ -257,7 +254,7 @@ export class MerchantsController {
     @Body() updateProductDto: UpdateProductDto,
     @Request() req: any,
     @UploadedFile() file: Express.Multer.File,
-    @Response() response: any
+    @Response() res: any
   ) {
     console.log('req.body', req.body);
     console.log('updateProductDto', updateProductDto);
@@ -281,7 +278,7 @@ export class MerchantsController {
         ...updateProductDto,
       });
     }
-    response.json({ UpdatedProduct: [updatedProduct] });
+    return res.json({ UpdatedProduct: [updatedProduct] });
   }
 
   @Post('delete-single-product')
@@ -294,6 +291,21 @@ export class MerchantsController {
   @Get('find-products')
   async findProducts() {
     return await this.productsService.findAll();
+  }
+
+  @Get('products')
+  @UseGuards(JwtAuthGuard)
+  async productsByMerchant(@Request() req, @Response() res) {
+    const { email } = req.user;
+    console.log('email', email);
+    const foundMerchant = await this.merchantsService.findByEmail(email);
+
+    if (foundMerchant) {
+      const productsByMerch = await this.productsService.getProductsByMerch(
+        foundMerchant
+      );
+      res.json({ productsByMerch });
+    }
   }
 
   @Post('products-supplier')
@@ -328,13 +340,29 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard)
   async getOrdersByMerchant(@Request() req, @Response() res) {
     const { email } = req.user;
+    console.log('email', email);
     const foundMerchant = await this.merchantsService.findByEmail(email);
+    console.log('foundMerchant', foundMerchant);
+    let foundOrders;
+    let foundOrderDetails;
 
     if (foundMerchant) {
       const { id } = foundMerchant;
-      const foundOrders = await this.orderService.findByMerchant(id);
-      res.json({ foundOrders });
+      console.log('id', id);
+      foundOrders = await this.orderService.findByMerchant(id);
+      console.log('foundOrders', foundOrders);
+
+      if (foundOrders) {
+        foundOrders.forEach(async (order) => {
+          const { id } = order;
+          foundOrderDetails = await this.orderDetailService.findByOrderId(id);
+          // console.log('foundOrderDetails', foundOrderDetails);
+          return foundOrderDetails;
+        });
+      }
     }
+
+    res.json({ foundOrders, foundOrderDetails });
   }
 
   @Post('create-order')
@@ -345,14 +373,17 @@ export class MerchantsController {
     @Response() res
   ) {
     const { email } = req.user;
-    const foundMerchant = await this.merchantsService.findByEmail(email);
-    const { userId } = createOrderDto;
-    const foundUser = await this.usersService.findOne(userId);
+    const { customerId } = createOrderDto;
 
-    if (foundMerchant && foundUser) {
+    const merchant = await this.merchantsService.findByEmail(email);
+    const user = await this.usersService.findOne(customerId);
+
+    console.log('createOrderDto', createOrderDto);
+
+    if (merchant && user) {
       const createdOrder = await this.orderService.create(
-        foundMerchant,
-        foundUser,
+        merchant,
+        user,
         createOrderDto
       );
 
@@ -362,17 +393,17 @@ export class MerchantsController {
           const { productId, quantity, price } = p;
           const foundProduct = await this.productsService.findOne(productId);
           if (foundProduct) {
-            const createdOD = await this.orderDetailService.add(
+            await this.orderDetailService.add(
               createdOrder,
               foundProduct,
               quantity,
               price
             );
-            return res.json({ createdOD });
           }
         });
       }
     }
+    res.json({ createOrderDto });
   }
 
   @Post('delete-order')
@@ -393,6 +424,7 @@ export class MerchantsController {
       return await this.orderService.update(id, updateOrderDto);
     }
   }
+
   /*
   __________
   ORDERS
@@ -400,9 +432,61 @@ export class MerchantsController {
   */
 
   /*
-  __________
+  ____________
+  ORDER DETAIL
+  ____________
+  */
+
+  @Post('order-detail')
+  @UseGuards(JwtAuthGuard)
+  async getOrderDetailByOrder(
+    @Request() req,
+    @Response() res,
+    @Body() orderDetailByOrder: OrderDetailByOrder
+  ) {
+    console.log('req.body', req.body.email);
+    console.log('orderDetailByOrder', orderDetailByOrder);
+    const { orderId } = orderDetailByOrder;
+    const orderDetail = await this.orderDetailService.findByOrderId(orderId);
+    res.json({ orderDetail });
+  }
+
+  @Post('delete-order-detail')
+  @UseGuards(JwtAuthGuard)
+  async deleteOrderDetail(
+    @Request() req,
+    @Response() res,
+    @Body() deleteOrderDetail: DeleteOrderDetail
+  ) {
+    console.log('deleteOrderDetail', deleteOrderDetail);
+    const { id } = deleteOrderDetail;
+    const deleted = await this.orderDetailService.remove(id);
+    res.status(200).json({ deleted });
+  }
+
+  @Post('update-order-detail')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(ValidationPipe)
+  async updateOrderDetail(
+    @Request() req,
+    @Response() res,
+    @Body() updateOrderDetail: UpdateOrderDetail
+  ) {
+    console.log('updateOrderDetail', updateOrderDetail);
+    const updated = this.orderDetailService.update(updateOrderDetail);
+    res.json({ updated });
+  }
+
+  /*
+  ____________
+  ORDER DETAIL
+  ____________
+  */
+
+  /*
+  _________
   SUPPLIERS
-  ----------
+  ---------
   */
 
   @Post('create-supplier')
@@ -444,9 +528,9 @@ export class MerchantsController {
   }
 
   /*
-  __________
+  _________
   SUPPLIERS
-  ----------
+  ---------
   */
 
   /*
@@ -480,6 +564,7 @@ export class MerchantsController {
 
         // Loop over each product
         products.forEach(async (p): Promise<Products> => {
+          console.log('p', p);
           const { productId, quantity } = p;
           const foundProduct = await this.productsService.findOne(productId);
           if (foundProduct) {
@@ -489,11 +574,37 @@ export class MerchantsController {
               quantity
             );
 
+            // Order Cretaed Event
+            const orderCreatedEvent = new OrderCreatedEvent();
+            console.log('orderCreatedEvent', orderCreatedEvent);
+            orderCreatedEvent.supplierId = foundOrder.supplierId;
+            console.log('orderCreatedEvent', orderCreatedEvent);
+            const emitting = this.eventEmitter.emit(
+              'order.created',
+              orderCreatedEvent
+            );
+            console.log('emitting', emitting);
+            // Order Cretaed Event
+            this.eventEmitter.on(
+              'order.created',
+              function () {
+                console.log('The event was raised!');
+              },
+              { async: true }
+            );
+
             return createdPD;
           }
         });
       }
     }
+
+    return res.json({ orderCreated: true });
+  }
+
+  @OnEvent('order.created', { async: true })
+  handleOrderCreatedEvent(event: OrderCreatedEvent, @Response() res) {
+    console.log('Your Order has been successfully created!', event);
   }
 
   // Get Purchase Orders by Merchant
@@ -507,15 +618,52 @@ export class MerchantsController {
       const { id } = merchant;
       const orders = await this.purchaseService.getMerchantOrders(id);
       if (orders) {
-        res.json({ orders });
+        return res.json({ orders });
       }
     }
+  }
+
+  @Post('delete-purchase-order')
+  @UseGuards(JwtAuthGuard)
+  async deletePurchaseOrder(@Request() req) {
+    console.log('req.body', req.body.id);
+    const { id } = req.body;
+    await this.purchaseService.remove(id);
   }
 
   /*
   _______________
   PURCHASE ORDERS
   _______________
+  */
+
+  /*
+  _____________________
+  PURCHASE ORDER DETAIL
+  _____________________
+  */
+
+  @Post('update-purchase-order-detail')
+  @UseGuards(JwtAuthGuard)
+  async updatePurchaseOrderDetail(
+    @Request() req: any,
+    @Response() res: any,
+    @Body() updatePurchaseOrderDetail: UpdatePurchaseOrderDetail
+  ) {
+    console.log('updatePurchaseOrderDetail', updatePurchaseOrderDetail);
+
+    // Update Existing Purchase Order Detail
+
+    await this.purchaseDetailService.update(updatePurchaseOrderDetail);
+
+    // Create New Purchase Order Detail
+    res.json({ updatePurchaseOrderDetail });
+  }
+
+  /*
+  _____________________
+  PURCHASE ORDER DETAIL
+  _____________________
   */
 
   // Get Single Product
@@ -595,10 +743,17 @@ export class MerchantsController {
     @Response() res: any,
     @Body() updateUsersDto: UpdateUsersDto
   ) {
-    const { id } = updateUsersDto;
-    const foundUser = await this.usersService.update(id, updateUsersDto);
-    if (foundUser) {
-      return res.json(foundUser);
+    try {
+      console.log('~~~~', updateUsersDto);
+      const { id } = updateUsersDto;
+      const foundUser = await this.usersService.update(id, updateUsersDto);
+
+      if (foundUser) {
+        return res.json(foundUser);
+      }
+    } catch (err) {
+      console.log('err', err);
+      // throw new HttpException("some error", HttpStatus.BAD_REQUEST)
     }
   }
 
@@ -609,46 +764,106 @@ export class MerchantsController {
   */
 
   /*
-  _____________________
-  PURCHASE ORDER - FILE
-  _____________________
+  ______________
+  PURCHASE ORDER
+  ______________
   */
 
-  @Post('template')
-  @UseGuards(JwtAuthGuard)
-  // @Render('template')
-  async root(
-    @Request() req: any,
-    @Response() res: any,
-    @Body() purchaseIdDto: PurchaseIdDto
-  ) {
-    const { email } = req.user;
-    const merchant = await this.merchantsService.findByEmail(email);
+  // @Post('purchase-order')
+  // @UseGuards(JwtAuthGuard)
+  // async root(
+  //   @Request() req: any,
+  //   @Response() res: any,
+  //   @Body() purchaseIdDto: PurchaseIdDto
+  // ) {
+  //   const { email } = req.user;
+  //   const merchant = await this.merchantsService.findByEmail(email);
+  //   const { orderId } = purchaseIdDto;
 
-    const { orderId } = purchaseIdDto;
+  //   if (merchant) {
+  //     const { id } = merchant;
+  //     const orders = await this.purchaseService.getMerchantOrders(id);
 
-    if (merchant) {
-      const { id } = merchant;
-      const orders = await this.purchaseService.getMerchantOrders(id);
+  //     if (orders) {
+  //       const foundOrder = orders.find((o: any) => o.id === orderId);
+  //       const pds = await this.purchaseDetailService.findPurchaseDetailByOrder(
+  //         orderId
+  //       );
 
-      if (orders) {
-        const foundOrder = orders.find((o: any) => o.id === orderId);
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        const content = await compileTemplate('template');
+  //       const totalPrice = pds
+  //         .map((item) => item.quantity * item.product.retailPrice)
+  //         .reduce((acc, curr) => acc + curr);
 
-        if (content) {
-          await page.setContent(content({ order: foundOrder }));
-          const pdf = await page.pdf();
-          console.log('Check =>', pdf);
-          return res.send(pdf);
-        }
-      }
-    }
-  }
+  //       const browser = await puppeteer.launch();
+  //       const page = await browser.newPage();
+  //       const content = await compileTemplate('purchase-order');
+
+  //       if (content) {
+  //         await page.setContent(
+  //           content({ order: foundOrder, items: pds, total: totalPrice })
+  //         );
+  //         const pdf = await page.pdf();
+  //         return res.end(pdf);
+  //       }
+  //     }
+  //   }
+  // }
+
   /*
-  _____________________
-  PURCHASE ORDER - FILE
-  _____________________
+  ______________
+  PURCHASE ORDER
+  ______________
+  */
+
+  /*
+  _______
+  INVOICE
+  _______
+  */
+
+  // @Post('invoice')
+  // @UseGuards(JwtAuthGuard)
+  // async getInvoice(
+  //   @Request() req: any,
+  //   @Response() res: any,
+  //   @Body() orderIdDto: OrderIdDto
+  // ) {
+  //   const { email } = req.user;
+  //   const merchant = await this.merchantsService.findByEmail(email);
+  //   const { orderId } = orderIdDto;
+
+  //   if (merchant) {
+  //     const order = await this.orderService.findOne(orderId);
+  //     console.log('order', order);
+
+  //     const orderDetail = await this.orderDetailService.findByOrderId(orderId);
+  //     console.log('orderDetail', orderDetail);
+
+  //     if (order && orderDetail) {
+  //       const totalPrice = orderDetail
+  //         .map((item) => item.quantity * item.product.retailPrice)
+  //         .reduce((acc, curr) => acc + curr);
+  //       const browser = await puppeteer.launch();
+  //       const page = await browser.newPage();
+  //       const content = await compileTemplate('invoice');
+  //       if (content) {
+  //         await page.setContent(
+  //           content({
+  //             order: order,
+  //             orderDetail: orderDetail,
+  //             totalPrice: totalPrice,
+  //           })
+  //         );
+  //         const pdf = await page.pdf();
+  //         return res.end(pdf);
+  //       }
+  //     }
+  //   }
+  // }
+
+  /*
+  _______
+  INVOICE
+  _______
   */
 }

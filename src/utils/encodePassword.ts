@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import * as bcrypt from 'bcrypt';
+// import bcrypt from 'bcryptjs';
 
 export function encodePassword(password: string) {
   const salt = bcrypt.genSaltSync();

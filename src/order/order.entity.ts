@@ -29,17 +29,24 @@ export class Order {
   // _________
   // RELATIONS
   // _________
+
   @ManyToOne(() => Merchant, (merchant) => merchant.order)
   merchant: Merchant;
 
-  @ManyToOne(() => User, (user) => user.order)
+  @ManyToOne(() => User, (user) => user.order, {
+    onDelete: 'CASCADE',
+  })
   user: User;
 
   @OneToMany(() => OrderDetail, (orderDetail) => orderDetail.order)
   orderDetail: OrderDetail;
+
   // _________
   // RELATIONS
   // _________
+
+  @Column()
+  merchantId: number;
 
   @Column({
     default: JobStatus.Waiting,

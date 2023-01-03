@@ -14,6 +14,7 @@ import { Product } from '../products/product.entity';
 import { Order } from '../order/order.entity';
 import { Supplier } from '../suppliers/supplier.entity';
 import { User } from '../users/user.entity';
+import { Job } from '../job/job.entity';
 
 export enum MerchantRole {
   MECHANIC = 'mechanic',
@@ -42,6 +43,9 @@ export class Merchant {
 
   @OneToMany(() => User, (user) => user.merchant)
   user: User;
+
+  @OneToMany(() => Job, (job) => job.merchant)
+  job: Job;
 
   // _________
   // RELATIONS

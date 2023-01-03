@@ -14,6 +14,8 @@ import { OrderDetail } from './order-detail/order-detail.entity';
 import { Supplier } from './suppliers/supplier.entity';
 import { Purchase } from './purchases/purchase.entity';
 import { PurchaseDetail } from './purchase-detail/purchase-detail.entity';
+import { Job } from './job/job.entity';
+import { JobDetail } from './job-detail/job-detail.entity';
 
 // Modules
 import { AuthModule } from './auth/auth.module';
@@ -24,6 +26,8 @@ import { OrderDetailModule } from './order-detail/order-detail.module';
 import { PurchaseModule } from './purchases/purchase.module';
 import { SuppliersModule } from './suppliers/supplier.module';
 import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
+import { JobModule } from './job/job.module';
+import { JobDetailModule } from './job-detail/job-detail.module';
 
 @Module({
   imports: [
@@ -43,6 +47,8 @@ import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
         Supplier,
         Purchase,
         PurchaseDetail,
+        Job,
+        JobDetail,
       ],
       synchronize: true,
     }),
@@ -57,6 +63,8 @@ import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
     PurchaseModule,
     SuppliersModule,
     PurchaseDetailModule,
+    JobModule,
+    JobDetailModule,
   ],
   controllers: [],
   providers: [],

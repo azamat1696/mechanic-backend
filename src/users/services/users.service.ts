@@ -10,7 +10,7 @@ import { User } from '../user.entity';
 import { CreateUsersDto } from '../../merchants/dto/users/create.dto';
 
 // Utils
-import { encodePassword } from '../../utils/encodePassword';
+// import { encodePassword } from '../../utils/encodePassword';
 
 @Injectable()
 export class UsersService {
@@ -70,14 +70,22 @@ export class UsersService {
     }
   }
 
-  async update(id: number, updateUsersDto) {
-    const updatedUser = await this.usersRepository.update(id, updateUsersDto);
-    console.log('updatedUser', updatedUser);
+  async update(id: number, updateUsersDto: any) {
+    try {
+      const updatedUser = await this.usersRepository.update(id, updateUsersDto);
 
-    if (updatedUser) {
-      const user = await this.usersRepository.findOneBy({ id });
-      console.log('user', user);
-      return user;
+      if (updatedUser) {
+        try {
+          const user = await this.usersRepository.findOneBy({ id });
+          console.log('user', user);
+          return user;
+        } catch (err) {
+          console.log('err', err);
+          return err;
+        }
+      }
+    } catch (err) {
+      console.log('err', err);
     }
   }
 }

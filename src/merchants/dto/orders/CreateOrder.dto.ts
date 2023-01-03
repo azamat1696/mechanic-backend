@@ -5,7 +5,7 @@ import {
   IsString,
   MinLength,
   IsInt,
-  IsNumber,
+  IsArray,
 } from 'class-validator';
 
 export class CreateOrderDto {
@@ -20,8 +20,12 @@ export class CreateOrderDto {
   description: string;
 
   @IsInt()
-  @IsNumber()
-  merchantId: number;
+  @IsNotEmpty()
+  customerId: number;
+
+  @IsArray()
+  @IsNotEmpty()
+  products: [];
 
   @IsBoolean()
   @IsNotEmpty()

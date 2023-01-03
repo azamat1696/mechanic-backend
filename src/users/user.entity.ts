@@ -9,8 +9,11 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
+
+// Entity
 import { Merchant } from '../merchants/merchant.entity';
 import { Order } from '../order/order.entity';
+import { Job } from '../job/job.entity';
 
 @Entity()
 export class User {
@@ -23,8 +26,13 @@ export class User {
   @OneToMany(() => Order, (order) => order.user)
   order: Order;
 
-  @ManyToOne(() => Merchant, (merchant) => merchant.user)
+  @ManyToOne(() => Merchant, (merchant) => merchant.user, {
+    onDelete: 'CASCADE',
+  })
   merchant: Merchant;
+
+  @OneToMany(() => Job, (job) => job.user)
+  job: Job;
 
   // _________
   // RELATIONS

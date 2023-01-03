@@ -2,8 +2,7 @@
   <head>
     <meta charset='utf-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1' />
-
-    <title>Invoice</title>
+    <title>Order Confirmation</title>
     <link rel='icon' href='./images/favicon.png' type='image/x-icon' />
     <style>
       body { font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial,
@@ -42,10 +41,9 @@
             <table>
               <tr>
                 <td class='title'>
-                  Satın alma emri -
-                  {{order.id}}</td>
+                  Invoice: #{{order.id}}
+                </td>
                 <td>
-                  Invoice #: 123<br />
                   Created: January 1, 2015<br />
                   Due: February 1, 2015
                 </td>
@@ -59,7 +57,7 @@
             <table>
               <tr>
                 <td>
-                  {{order.supplier.name}}<br />
+                  {{!-- {{order.supplier.name}}<br /> --}}
                   12345 Sunny Road<br />
                   Sunnyville, TX 12345
                 </td>
@@ -75,39 +73,26 @@
         </tr>
 
         <tr class='heading'>
-          <td>Payment Method</td>
-          <td>Check #</td>
-        </tr>
-
-        <tr class='details'>
-          <td>Check</td>
-          <td>1000</td>
-        </tr>
-
-        <tr class='heading'>
           <td>Item</td>
-          <td>Price</td>
+          <td>Qty</td>
+          <td>Rtl</td>
+          <td>Ttl</td>
         </tr>
 
-        <tr class='item'>
-          <td>Website design</td>
-          <td>$300.00</td>
-        </tr>
-
-        <tr class='item'>
-          <td>Hosting (3 months)</td>
-          <td>$75.00</td>
-        </tr>
-
-        <tr class='item last'>
-          <td>Domain name (1 year)</td>
-          <td>$10.00</td>
-        </tr>
+        {{#each orderDetail}}
+          <tr>
+            <td>{{product.name}}</td>
+            <td>{{quantity}}</td>
+            <td>{{product.retailPrice}}</td>
+            <td>{{multiply quantity product.retailPrice}}</td>
+          </tr>
+        {{/each}}
 
         <tr class='total'>
           <td></td>
-          <td>Total: $385.00</td>
+          <td>Total Price: {{totalPrice}}</td>
         </tr>
+
       </table>
     </div>
   </body>

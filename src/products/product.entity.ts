@@ -35,7 +35,6 @@ export class Product {
 
   @OneToMany(() => PurchaseDetail, (purchaseDetail) => purchaseDetail.product)
   purchaseDetail: PurchaseDetail;
-
   // _________
   // RELATIONS
   // _________
