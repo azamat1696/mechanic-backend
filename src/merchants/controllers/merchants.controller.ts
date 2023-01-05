@@ -340,9 +340,9 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard)
   async getOrdersByMerchant(@Request() req, @Response() res) {
     const { email } = req.user;
-    console.log('email', email);
+    // console.log('email', email);
     const foundMerchant = await this.merchantsService.findByEmail(email);
-    console.log('foundMerchant', foundMerchant);
+    // console.log('foundMerchant', foundMerchant);
     let foundOrders;
     let foundOrderDetails;
 
@@ -350,7 +350,7 @@ export class MerchantsController {
       const { id } = foundMerchant;
       console.log('id', id);
       foundOrders = await this.orderService.findByMerchant(id);
-      console.log('foundOrders', foundOrders);
+      // console.log('foundOrders', foundOrders);
 
       if (foundOrders) {
         foundOrders.forEach(async (order) => {
@@ -417,6 +417,7 @@ export class MerchantsController {
   @Post('update-order')
   @UseGuards(JwtAuthGuard)
   async updateOrder(@Body() updateOrderDto: UpdateOrderDto) {
+    // console.log('updateOrderDto', updateOrderDto);
     const { orderId } = updateOrderDto;
     const foundOrder = await this.orderService.findOne(orderId);
     const { id } = foundOrder;
@@ -444,8 +445,8 @@ export class MerchantsController {
     @Response() res,
     @Body() orderDetailByOrder: OrderDetailByOrder
   ) {
-    console.log('req.body', req.body.email);
-    console.log('orderDetailByOrder', orderDetailByOrder);
+    // console.log('req.body', req.body.email);
+    // console.log('orderDetailByOrder', orderDetailByOrder);
     const { orderId } = orderDetailByOrder;
     const orderDetail = await this.orderDetailService.findByOrderId(orderId);
     res.json({ orderDetail });
@@ -466,15 +467,32 @@ export class MerchantsController {
 
   @Post('update-order-detail')
   @UseGuards(JwtAuthGuard)
-  @UsePipes(ValidationPipe)
+  // @UsePipes(ValidationPipe)
   async updateOrderDetail(
     @Request() req,
     @Response() res,
     @Body() updateOrderDetail: UpdateOrderDetail
+    // @Body() orderIdDto: OrderIdDto
   ) {
-    console.log('updateOrderDetail', updateOrderDetail);
-    const updated = this.orderDetailService.update(updateOrderDetail);
-    res.json({ updated });
+    console.log('updateOrderDetail ~~~~', updateOrderDetail);
+    // console.log('orderIdDto', orderIdDto);
+    const { orderId: id, status } = updateOrderDetail;
+    console.log('id', id);
+
+    const newUpdates = { id, status };
+    console.log('newUpdates', newUpdates);
+
+    try {
+      const updatedOrder = await this.orderService.update(id, newUpdates);
+    } catch (err) {
+      console.log('err', err);
+    }
+
+    // if (updatedOrder) {
+    //   const updated = this.orderDetailService.update(updateOrderDetail);
+    // }
+
+    // res.json({ finished: 'fin' });
   }
 
   /*

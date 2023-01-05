@@ -33,7 +33,7 @@ export class AuthService {
   async validateMerchant(email: string, password: string): Promise<any> {
     // console.log('auth service');
     const merchant = await this.merchantService.findByEmail(email);
-    console.log('Merchant ~~~~', merchant);
+    // console.log('Merchant ~~~~', merchant);
     if (merchant) {
       const matched = comparePasswords(password, merchant.password);
       if (matched) {

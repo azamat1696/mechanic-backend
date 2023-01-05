@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { IsArray, IsInt, IsNotEmpty } from 'class-validator';
+import { IsArray, IsInt, IsNotEmpty, IsString } from 'class-validator';
 
 export class UpdateOrderDetail {
   @IsArray()
@@ -8,4 +8,8 @@ export class UpdateOrderDetail {
   @IsInt()
   @IsNotEmpty()
   orderId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  status: string;
 }

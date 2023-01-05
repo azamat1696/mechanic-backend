@@ -29,7 +29,7 @@ export class OrderService {
         merchant: false,
       },
     });
-    console.log('ordersByMerch', ordersByMerch);
+    // console.log('ordersByMerch', ordersByMerch);
     return ordersByMerch;
   }
   // Find all by merchantId
@@ -52,10 +52,17 @@ export class OrderService {
     return await this.orderRepository.save(newOrder);
   }
 
-  async update(id: number, updateOrderDto) {
-    const updatedOrder = await this.orderRepository.update(id, updateOrderDto);
-    if (updatedOrder) {
-      return updatedOrder;
+  async update(id: number, updateOrderDto: any) {
+    try {
+      const updatedOrder = await this.orderRepository.update(
+        id,
+        updateOrderDto
+      );
+      if (updatedOrder) {
+        return updatedOrder;
+      }
+    } catch (err) {
+      console.log('err', err);
     }
   }
 }
