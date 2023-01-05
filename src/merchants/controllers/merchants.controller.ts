@@ -22,7 +22,7 @@ import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 // Pdf
 import { compileTemplate } from '../.././utils/helpers';
-import puppeteer from 'puppeteer';
+// import puppeteer from 'puppeteer';
 
 // Event Emitter
 import { MinimumStockEvent } from '../event-emitter/event-emitter';

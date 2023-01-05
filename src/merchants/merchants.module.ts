@@ -2,7 +2,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { PuppeteerModule } from 'nest-puppeteer';
+// import { PuppeteerModule } from 'nest-puppeteer';
 
 // Controllers
 import { MerchantsController } from './controllers/merchants.controller';
@@ -33,10 +33,10 @@ import { JobDetail } from '../job-detail/job-detail.entity';
 
 @Module({
   imports: [
-    PuppeteerModule.forRoot(
-      { pipe: true }, // optional, any Puppeteer launch options here or leave empty for good defaults */,
-      'BrowserInstanceName' // optional, can be useful for using Chrome and Firefox in the same project
-    ),
+    // PuppeteerModule.forRoot(
+    //   { pipe: true }, // optional, any Puppeteer launch options here or leave empty for good defaults */,
+    //   'BrowserInstanceName' // optional, can be useful for using Chrome and Firefox in the same project
+    // ),
     TypeOrmModule.forFeature([
       Merchant,
       Product,
