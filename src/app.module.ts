@@ -32,12 +32,12 @@ import { JobDetailModule } from './job-detail/job-detail.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
+      type: 'mariadb',
+      host: 'j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com',
       port: 3306,
-      username: 'halil',
-      password: 'H@lilh2o',
-      database: 'mechanic',
+      username: 'qegc4sztfwbmkgsd',
+      password: 'lps2raf2ogwkf59c',
+      database: 'keoa78irb4mz2plv',
       entities: [
         User,
         Merchant,
