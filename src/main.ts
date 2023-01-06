@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as hbs from 'hbs';
 import { ConfigService } from '@nestjs/config';
+import 'dotenv/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -21,8 +22,8 @@ async function bootstrap() {
     return a * b;
   });
 
-  const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT');
+  // const configService = app.get(ConfigService);
+  const port = process.env.APP_PORT;
   await app.listen(port);
 }
 
