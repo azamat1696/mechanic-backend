@@ -41,7 +41,7 @@ import { JobDetailModule } from './job-detail/job-detail.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mysql',
+      type: 'mariadb',
       port: 3306,
       host: process.env.HOST,
       username: process.env.USERNAME,
