@@ -28,16 +28,25 @@ import { SuppliersModule } from './suppliers/supplier.module';
 import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
 import { JobModule } from './job/job.module';
 import { JobDetailModule } from './job-detail/job-detail.module';
+import dotenv from 'dotenv';
+// import { DatabaseModule } from '../src/db/database.module';
+
+dotenv.config({
+  path:
+    process.env.NODE_ENV === 'production'
+      ? '.env.production'
+      : '.env.development',
+});
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'mariadb',
-      host: 'j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com',
       port: 3306,
-      username: 'qegc4sztfwbmkgsd',
-      password: 'lps2raf2ogwkf59c',
-      database: 'keoa78irb4mz2plv',
+      host: process.env.HOST,
+      username: process.env.USERNAME,
+      password: process.env.PASSWORD,
+      database: process.env.DATABASE,
       entities: [
         User,
         Merchant,
@@ -65,6 +74,7 @@ import { JobDetailModule } from './job-detail/job-detail.module';
     PurchaseDetailModule,
     JobModule,
     JobDetailModule,
+    // DatabaseModule,
   ],
   controllers: [],
   providers: [],
