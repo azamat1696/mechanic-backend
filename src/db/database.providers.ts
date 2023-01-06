@@ -6,7 +6,7 @@ export const databaseProviders = [
     provide: 'DATA_SOURCE',
     useFactory: async () => {
       const dataSource = new DataSource({
-        type: 'mariadb',
+        type: 'mysql',
         port: 3306,
         // url: process.env.URL,
         host: process.env.HOST,
