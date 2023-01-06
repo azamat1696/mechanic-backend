@@ -4,7 +4,7 @@ import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Entities
 import { User } from './users/user.entity';
@@ -41,28 +41,53 @@ import { JobDetailModule } from './job-detail/job-detail.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: 'mariadb',
-      port: 3306,
-      host: 'j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com',
-      username: 'qegc4sztfwbmkgsd',
-      password: 'lps2raf2ogwkf59c',
-      database: 'keoa78irb4mz2plv',
-      entities: [
-        User,
-        Merchant,
-        Order,
-        Product,
-        OrderDetail,
-        Supplier,
-        Purchase,
-        PurchaseDetail,
-        Job,
-        JobDetail,
-      ],
-      synchronize: true,
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mariadb',
+        port: 3306,
+        host: configService.get<string>('HOST'),
+        username: configService.get<string>('USERNAME'),
+        password: configService.get<string>('PASSWORD'),
+        database: configService.get<string>('DATABASE'),
+        entities: [
+          User,
+          Merchant,
+          Order,
+          Product,
+          OrderDetail,
+          Supplier,
+          Purchase,
+          PurchaseDetail,
+          Job,
+          JobDetail,
+        ],
+        synchronize: true,
+      }),
     }),
+    // TypeOrmModule.forRoot({
+    //   type: 'mariadb',
+    //   port: 3306,
+    //   host: 'j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com',
+    //   username: 'qegc4sztfwbmkgsd',
+    //   password: 'lps2raf2ogwkf59c',
+    //   database: 'keoa78irb4mz2plv',
+    //   entities: [
+    //     User,
+    //     Merchant,
+    //     Order,
+    //     Product,
+    //     OrderDetail,
+    //     Supplier,
+    //     Purchase,
+    //     PurchaseDetail,
+    //     Job,
+    //     JobDetail,
+    //   ],
+    //   synchronize: true,
+    // }),
     EventEmitterModule.forRoot(),
     UsersModule,
     AuthModule,
