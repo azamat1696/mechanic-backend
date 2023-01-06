@@ -15,11 +15,11 @@ export const databaseProviders = [
         database: process.env.DATABASE,
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         synchronize: true,
-        ssl: true,
-        extra: {
-          ssl: true,
-          rejectUnauthorized: false,
-        },
+        // ssl: true,
+        // extra: {
+        //   ssl: true,
+        //   rejectUnauthorized: false,
+        // },
       });
 
       return dataSource.initialize();
