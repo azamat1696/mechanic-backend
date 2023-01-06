@@ -1,5 +1,13 @@
 /* eslint-disable prettier/prettier */
 import { DataSource } from 'typeorm';
+import dotenv from 'dotenv';
+
+dotenv.config({
+  path:
+    process.env.NODE_ENV === 'production'
+      ? '.env.production'
+      : '.env.development',
+});
 
 export const databaseProviders = [
   {
