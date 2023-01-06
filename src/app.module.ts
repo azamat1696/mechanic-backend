@@ -28,15 +28,15 @@ import { SuppliersModule } from './suppliers/supplier.module';
 import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
 import { JobModule } from './job/job.module';
 import { JobDetailModule } from './job-detail/job-detail.module';
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv';
 // import { DatabaseModule } from '../src/db/database.module';
 
-dotenv.config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
-});
+// dotenv.config({
+//   path:
+//     process.env.NODE_ENV === 'production'
+//       ? '.env.production'
+//       : '.env.development',
+// });
 
 @Module({
   imports: [
