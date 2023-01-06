@@ -45,10 +45,10 @@ import { JobDetailModule } from './job-detail/job-detail.module';
     TypeOrmModule.forRoot({
       type: 'mariadb',
       port: 3306,
-      host: process.env.HOST,
-      username: process.env.USERNAME,
-      password: process.env.PASSWORD,
-      database: process.env.DATABASE,
+      host: 'j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com',
+      username: 'qegc4sztfwbmkgsd',
+      password: 'lps2raf2ogwkf59c',
+      database: 'keoa78irb4mz2plv',
       entities: [
         User,
         Merchant,
