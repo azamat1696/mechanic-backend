@@ -47,7 +47,7 @@ import { JobDetailModule } from './job-detail/job-detail.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'mariadb',
-        port: 3306,
+        port: configService.get<number>('DB_PORT'),
         host: configService.get<string>('HOST'),
         username: configService.get<string>('USERNAME'),
         password: configService.get<string>('PASSWORD'),
