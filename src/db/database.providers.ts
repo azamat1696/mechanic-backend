@@ -17,6 +17,7 @@ export const databaseProviders = [
         ssl: true,
         extra: {
           ssl: true,
+          rejectUnauthorized: false,
         },
       });
 
