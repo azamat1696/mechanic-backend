@@ -120,8 +120,9 @@ export class MerchantsController {
   ) {}
 
   @Get()
-  getUsers() {
-    return this.merchantsService.findAll();
+  getUsers(@Response() res: any) {
+    const merch = this.merchantsService.findAll();
+    res.json({ merch });
   }
 
   @Get('list-products')
