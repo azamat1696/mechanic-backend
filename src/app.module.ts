@@ -36,6 +36,7 @@ let envFilePath = '.env.dev';
 console.log('Running in:', process.env.NODE_ENV);
 
 if (process.env.NODE_ENV === 'PRODUCTION') {
+  console.log('process.env.NODE_ENV', process.env.NODE_ENV);
   envFilePath = '.env.prod';
 }
 
@@ -47,27 +48,30 @@ console.log('envFilePath ~~~~', envFilePath);
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        type: 'mariadb',
-        host: configService.get('HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('UN'),
-        password: configService.get('PASSWORD'),
-        database: configService.get('DATABASE'),
-        entities: [
-          User,
-          Merchant,
-          Order,
-          Product,
-          OrderDetail,
-          Supplier,
-          Purchase,
-          PurchaseDetail,
-          Job,
-          JobDetail,
-        ],
-        synchronize: true,
-      }),
+      useFactory: async (configService: ConfigService) => (
+        console.log("configService.get('HOST')", configService.get('HOST')),
+        {
+          type: 'mariadb',
+          host: configService.get('HOST'),
+          port: configService.get('DB_PORT'),
+          username: configService.get('UN'),
+          password: configService.get('PASSWORD'),
+          database: configService.get('DATABASE'),
+          entities: [
+            User,
+            Merchant,
+            Order,
+            Product,
+            OrderDetail,
+            Supplier,
+            Purchase,
+            PurchaseDetail,
+            Job,
+            JobDetail,
+          ],
+          synchronize: true,
+        }
+      ),
     }),
     // TypeOrmModule.forRoot({
     //   type: 'mariadb',
