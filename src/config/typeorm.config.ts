@@ -13,6 +13,7 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
   ): Promise<TypeOrmModuleOptions> => {
     return {
       type: 'mariadb',
+      url: configService.get('JAWSDB_MARIA_URL'),
       host: configService.get('HOST'),
       port: +configService.get('DB_PORT'),
       username: configService.get('UN'),
