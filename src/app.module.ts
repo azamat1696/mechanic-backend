@@ -31,6 +31,7 @@ import { JobModule } from './job/job.module';
 import { JobDetailModule } from './job-detail/job-detail.module';
 import 'dotenv/config';
 // import { DatabaseModule } from '../src/db/database.module';
+import { typeOrmConfigAsync } from './config/typeorm.config';
 
 let envFilePath = '.env.dev';
 console.log('Running in:', process.env.NODE_ENV);
@@ -45,31 +46,32 @@ console.log('envFilePath ~~~~', envFilePath);
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath, isGlobal: true }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mariadb',
-        host: configService.get('HOST'),
-        port: +configService.get('DB_PORT'),
-        username: configService.get('UN'),
-        password: configService.get('PASSWORD'),
-        database: configService.get('DATABASE'),
-        entities: [
-          User,
-          Merchant,
-          Order,
-          Product,
-          OrderDetail,
-          Supplier,
-          Purchase,
-          PurchaseDetail,
-          Job,
-          JobDetail,
-        ],
-        synchronize: true,
-      }),
-      inject: [ConfigService],
-    }),
+    TypeOrmModule.forRootAsync(typeOrmConfigAsync),
+    // TypeOrmModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: (configService: ConfigService) => ({
+    //     type: 'mariadb',
+    //     host: configService.get('HOST'),
+    //     port: +configService.get('DB_PORT'),
+    //     username: configService.get('UN'),
+    //     password: configService.get('PASSWORD'),
+    //     database: configService.get('DATABASE'),
+    //     entities: [
+    //       User,
+    //       Merchant,
+    //       Order,
+    //       Product,
+    //       OrderDetail,
+    //       Supplier,
+    //       Purchase,
+    //       PurchaseDetail,
+    //       Job,
+    //       JobDetail,
+    //     ],
+    //     synchronize: configService.get('SYNCHRONIZE'),
+    //   }),
+    //   inject: [ConfigService],
+    // }),
     // TypeOrmModule.forRoot({
     //   type: 'mariadb',
     //   port: parseInt(process.env.PORT),

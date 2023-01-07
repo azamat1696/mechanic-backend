@@ -27,7 +27,10 @@ async function bootstrap() {
   // console.log('Environment', process.env);
   console.log('PORT', port);
   await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  const url = await app.getUrl();
+  if (url) {
+    console.log(`Application is running on: ${url}`);
+  }
 }
 
 bootstrap();
