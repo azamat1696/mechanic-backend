@@ -1,25 +1,19 @@
 /* eslint-disable prettier/prettier */
 import { DataSource } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 // import dotenv from 'dotenv';
-
-// dotenv.config({
-//   path:
-//     process.env.NODE_ENV === 'production'
-//       ? '.env.production'
-//       : '.env.development',
-// });
 
 export const databaseProviders = [
   {
     provide: 'DATA_SOURCE',
-    useFactory: async () => {
+    useFactory: async (configService: ConfigService) => {
       const dataSource = new DataSource({
         type: 'mariadb',
-        port: 3306,
-        host: '127.0.0.1',
-        username: 'halil',
-        password: 'H@lilh2o',
-        database: 'mechanic',
+        port: configService.get('DB_PORT'),
+        host: configService.get('HOST'),
+        username: configService.get('UN'),
+        password: configService.get('PASSWORD'),
+        database: configService.get('DATABASE'),
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         synchronize: true,
       });
