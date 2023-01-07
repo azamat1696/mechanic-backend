@@ -120,8 +120,8 @@ export class MerchantsController {
   ) {}
 
   @Get()
-  getUsers(@Response() res: any) {
-    const merch = this.merchantsService.findAll();
+  async getUsers(@Response() res: any) {
+    const merch = await this.merchantsService.findAll();
     res.json({ merch });
   }
 
