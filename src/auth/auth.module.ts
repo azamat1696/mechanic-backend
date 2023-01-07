@@ -19,7 +19,8 @@ import { jwtConfig } from '../config/jwt.config';
     PassportModule.register({
       session: true,
     }),
-    JwtModule.registerAsync(jwtConfig),
+    // JwtModule.registerAsync(jwtConfig),
+    JwtModule.register(jwtConfig),
   ],
   controllers: [AuthController],
   providers: [
