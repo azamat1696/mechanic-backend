@@ -30,7 +30,7 @@ import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
 import { JobModule } from './job/job.module';
 import { JobDetailModule } from './job-detail/job-detail.module';
 import 'dotenv/config';
-import { DatabaseModule } from '../src/db/database.module';
+// import { DatabaseModule } from '../src/db/database.module';
 
 let envFilePath = '.env.dev';
 console.log('Running in:', process.env.NODE_ENV);
@@ -47,11 +47,10 @@ console.log('envFilePath ~~~~', envFilePath);
     ConfigModule.forRoot({ envFilePath, isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         type: 'mariadb',
         host: configService.get('HOST'),
-        port: configService.get('DB_PORT'),
+        port: +configService.get('DB_PORT'),
         username: configService.get('UN'),
         password: configService.get('PASSWORD'),
         database: configService.get('DATABASE'),
@@ -69,6 +68,7 @@ console.log('envFilePath ~~~~', envFilePath);
         ],
         synchronize: true,
       }),
+      inject: [ConfigService],
     }),
     // TypeOrmModule.forRoot({
     //   type: 'mariadb',
@@ -104,7 +104,7 @@ console.log('envFilePath ~~~~', envFilePath);
     PurchaseDetailModule,
     JobModule,
     JobDetailModule,
-    DatabaseModule,
+    // DatabaseModule,
   ],
   controllers: [],
   providers: [],

@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as hbs from 'hbs';
-import { ConfigService } from '@nestjs/config';
+// import { ConfigService } from '@nestjs/config';
 import 'dotenv/config';
 
 async function bootstrap() {
@@ -27,6 +27,7 @@ async function bootstrap() {
   // console.log('Environment', process.env);
   console.log('PORT', port);
   await app.listen(port);
+  console.log(`Application is running on: ${await app.getUrl()}`);
 }
 
 bootstrap();
