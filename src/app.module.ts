@@ -39,6 +39,8 @@ if (process.env.NODE_ENV === 'PRODUCTION') {
   envFilePath = '.env.prod';
 }
 
+console.log('envFilePath ~~~~', envFilePath);
+
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath, isGlobal: true }),
