@@ -11,6 +11,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { LocalStrategy } from './local.strategy';
 import { Merchant } from '../merchants/merchant.entity';
 import { MerchantsService } from '../merchants/services/merchants.service';
+import { jwtConfig } from '../config/jwt.config';
 
 @Module({
   imports: [
@@ -18,10 +19,7 @@ import { MerchantsService } from '../merchants/services/merchants.service';
     PassportModule.register({
       session: true,
     }),
-    JwtModule.register({
-      secret: 'secret',
-      signOptions: { expiresIn: '24hr' },
-    }),
+    JwtModule.registerAsync(jwtConfig),
   ],
   controllers: [AuthController],
   providers: [

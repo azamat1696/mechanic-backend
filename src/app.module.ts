@@ -29,7 +29,7 @@ import { SuppliersModule } from './suppliers/supplier.module';
 import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
 import { JobModule } from './job/job.module';
 import { JobDetailModule } from './job-detail/job-detail.module';
-import 'dotenv/config';
+// import 'dotenv/config';
 // import { DatabaseModule } from '../src/db/database.module';
 
 // dotenv.config({
@@ -42,52 +42,52 @@ import 'dotenv/config';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // TypeOrmModule.forRootAsync({
-    //   imports: [ConfigModule],
-    //   inject: [ConfigService],
-    //   useFactory: () => ({
-    //     type: 'mariadb',
-    //     port: configService.get<number>('DB_PORT'),
-    //     host: configService.get<string>('HOST'),
-    //     username: configService.get<string>('USERNAME'),
-    //     password: configService.get<string>('PASSWORD'),
-    //     database: configService.get<string>('DATABASE'),
-    //     entities: [
-    //       User,
-    //       Merchant,
-    //       Order,
-    //       Product,
-    //       OrderDetail,
-    //       Supplier,
-    //       Purchase,
-    //       PurchaseDetail,
-    //       Job,
-    //       JobDetail,
-    //     ],
-    //     synchronize: true,
-    //   }),
-    // }),
-    TypeOrmModule.forRoot({
-      type: 'mariadb',
-      port: 3306,
-      host: process.env.HOST,
-      username: process.env.USERNAME,
-      password: process.env.PASSWORD,
-      database: process.env.DATABASE,
-      entities: [
-        User,
-        Merchant,
-        Order,
-        Product,
-        OrderDetail,
-        Supplier,
-        Purchase,
-        PurchaseDetail,
-        Job,
-        JobDetail,
-      ],
-      synchronize: true,
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        type: 'mariadb',
+        port: configService.get('DB_PORT'),
+        host: configService.get('HOST'),
+        username: configService.get('USERNAME'),
+        password: configService.get('PASSWORD'),
+        database: configService.get('DATABASE'),
+        entities: [
+          User,
+          Merchant,
+          Order,
+          Product,
+          OrderDetail,
+          Supplier,
+          Purchase,
+          PurchaseDetail,
+          Job,
+          JobDetail,
+        ],
+        synchronize: true,
+      }),
     }),
+    // TypeOrmModule.forRoot({
+    //   type: 'mariadb',
+    //   port: 3306,
+    //   host: '127.0.0.1',
+    //   username: 'halil',
+    //   password: 'H@lilh2o',
+    //   database: 'mechanic',
+    //   entities: [
+    //     User,
+    //     Merchant,
+    //     Order,
+    //     Product,
+    //     OrderDetail,
+    //     Supplier,
+    //     Purchase,
+    //     PurchaseDetail,
+    //     Job,
+    //     JobDetail,
+    //   ],
+    //   synchronize: true,
+    // }),
     EventEmitterModule.forRoot(),
     UsersModule,
     AuthModule,

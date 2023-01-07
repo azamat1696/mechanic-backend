@@ -16,10 +16,10 @@ export const databaseProviders = [
       const dataSource = new DataSource({
         type: 'mariadb',
         port: 3306,
-        host: process.env.HOST,
-        username: process.env.USERNAME,
-        password: process.env.PASSWORD,
-        database: process.env.DATABASE,
+        host: '127.0.0.1',
+        username: 'halil',
+        password: 'H@lilh2o',
+        database: 'mechanic',
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         synchronize: true,
       });
