@@ -1,13 +1,13 @@
 /* eslint-disable prettier/prettier */
 import { DataSource } from 'typeorm';
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv';
 
-dotenv.config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
-});
+// dotenv.config({
+//   path:
+//     process.env.NODE_ENV === 'production'
+//       ? '.env.production'
+//       : '.env.development',
+// });
 
 export const databaseProviders = [
   {
@@ -23,12 +23,6 @@ export const databaseProviders = [
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         synchronize: true,
       });
-      // ssl: true,
-      // extra: {
-      //   ssl: true,
-      //   rejectUnauthorized: false,
-      // },
-
       return dataSource.initialize();
     },
   },

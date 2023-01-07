@@ -29,27 +29,27 @@ import { SuppliersModule } from './suppliers/supplier.module';
 import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
 import { JobModule } from './job/job.module';
 import { JobDetailModule } from './job-detail/job-detail.module';
-// import 'dotenv/config';
+import 'dotenv/config';
 // import { DatabaseModule } from '../src/db/database.module';
 
-// dotenv.config({
-//   path:
-//     process.env.NODE_ENV === 'production'
-//       ? '.env.production'
-//       : '.env.development',
-// });
+let envFilePath = '.env.dev';
+console.log('Running in:', process.env.NODE_ENV);
+
+if (process.env.NODE_ENV === 'PRODUCTION') {
+  envFilePath = '.env.prod';
+}
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ envFilePath, isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         type: 'mariadb',
-        port: configService.get('DB_PORT'),
         host: configService.get('HOST'),
-        username: configService.get('USERNAME'),
+        port: configService.get('DB_PORT'),
+        username: configService.get('UN'),
         password: configService.get('PASSWORD'),
         database: configService.get('DATABASE'),
         entities: [
@@ -69,11 +69,11 @@ import { JobDetailModule } from './job-detail/job-detail.module';
     }),
     // TypeOrmModule.forRoot({
     //   type: 'mariadb',
-    //   port: 3306,
-    //   host: '127.0.0.1',
-    //   username: 'halil',
-    //   password: 'H@lilh2o',
-    //   database: 'mechanic',
+    //   port: parseInt(process.env.PORT),
+    //   host: process.env.HOST,
+    //   username: process.env.UN,
+    //   password: process.env.PASSWORD,
+    //   database: process.env.DATABASE,
     //   entities: [
     //     User,
     //     Merchant,
