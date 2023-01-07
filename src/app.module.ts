@@ -49,7 +49,7 @@ console.log('envFilePath ~~~~', envFilePath);
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => (
-        console.log("configService.get('HOST')", configService.get('HOST')),
+        console.log("configService.get('HOST')", process.env.HOST),
         {
           type: 'mariadb',
           host: configService.get('HOST'),
