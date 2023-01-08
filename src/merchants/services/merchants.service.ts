@@ -21,7 +21,8 @@ export class MerchantsService {
   ) {}
 
   async findAll() {
-    return await this.merchantsRepository.find();
+    const merchants = await this.merchantsRepository.find();
+    return merchants;
   }
 
   async findOne(id: number) {

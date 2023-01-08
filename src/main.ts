@@ -4,12 +4,13 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as hbs from 'hbs';
-// import { ConfigService } from '@nestjs/config';
 import 'dotenv/config';
+import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.enableCors();
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     prefix: '/public/',
@@ -22,9 +23,7 @@ async function bootstrap() {
     return a * b;
   });
 
-  // const configService = app.get(ConfigService);
   const port = process.env.PORT || 8000;
-  // console.log('Environment', process.env);
   console.log('PORT', port);
   await app.listen(port);
   const url = await app.getUrl();

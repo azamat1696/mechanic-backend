@@ -34,7 +34,7 @@ export class AuthController {
   @Post('login/merchant')
   loginMerchant(@Request() req) {
     const { email, password } = req.body;
-    // console.log('email', email);
+    console.log('email', email);
     return this.authService.validateMerchant(email, password);
   }
 

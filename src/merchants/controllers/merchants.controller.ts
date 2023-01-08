@@ -14,6 +14,8 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -120,9 +122,21 @@ export class MerchantsController {
   ) {}
 
   @Get()
-  async getUsers(@Response() res: any) {
-    const merch = await this.merchantsService.findAll();
-    res.json({ merch });
+  async getUsers() {
+    const merch = this.merchantsService.findAll();
+    if (merch) return merch;
+
+    // try {
+    //   const merch = this.merchantsService.findAll();
+    //   console.log('typeof', await merch);
+    //   if ((await merch) === undefined)
+    //     throw new HttpException('Not found!', HttpStatus.BAD_REQUEST);
+    //   if (await merch) return merch;
+    //   // else throw new HttpException('Not found!', HttpStatus.BAD_REQUEST);
+    // } catch (err) {
+    //   console.log('err', err);
+    //   return err;
+    // }
   }
 
   @Get('list-products')

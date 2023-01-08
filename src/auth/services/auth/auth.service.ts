@@ -37,7 +37,6 @@ export class AuthService {
     if (merchant) {
       const matched = comparePasswords(password, merchant.password);
       if (matched) {
-        // console.log('Password correct!');
         return this.signMerchant(merchant);
       } else {
         console.log('Password Incorrect!');
