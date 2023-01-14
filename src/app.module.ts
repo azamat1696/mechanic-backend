@@ -37,7 +37,7 @@ let envFilePath = '.env.dev';
 console.log('Running in:', process.env.NODE_ENV);
 
 if (process.env.NODE_ENV === 'PRODUCTION') {
-  console.log('process.env.NODE_ENV', process.env.NODE_ENV);
+  console.log('process.env.ENV', process.env.NODE_ENV);
   envFilePath = '.env.prod';
 }
 

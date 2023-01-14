@@ -147,6 +147,12 @@ export class MerchantsController {
     res.json({ products });
   }
 
+  @Get('check-env')
+  async checkEnv() {
+    const env = process.env.NODE_ENV;
+    return env;
+  }
+
   /*
   __________
   STOCK VIEW
