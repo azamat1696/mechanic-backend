@@ -150,7 +150,7 @@ export class MerchantsController {
   @Get('check-env')
   async checkEnv() {
     const env = process.env.NODE_ENV;
-    return env;
+    return env === 'PRODUCTION' ? 'Production' : 'Development';
   }
 
   /*
