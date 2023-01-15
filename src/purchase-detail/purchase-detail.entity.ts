@@ -41,7 +41,7 @@ export class PurchaseDetail {
   @Column()
   quantity: number;
 
-  @Column()
+  @Column({ default: 0 })
   price: number;
 
   @CreateDateColumn()
