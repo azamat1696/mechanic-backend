@@ -490,28 +490,30 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard)
   // @UsePipes(ValidationPipe)
   async updateOrderDetail(
-    @Request() req,
-    @Response() res,
+    // @Request() req,
+    // @Response() res,
     @Body() updateOrderDetail: UpdateOrderDetail
     // @Body() orderIdDto: OrderIdDto
   ) {
     console.log('updateOrderDetail ~~~~', updateOrderDetail);
     // console.log('orderIdDto', orderIdDto);
-    const { orderId: id, status } = updateOrderDetail;
+    const { orderId: id, status, products } = updateOrderDetail;
     console.log('id', id);
+    console.log('products', products);
 
     const newUpdates = { id, status };
     console.log('newUpdates', newUpdates);
 
     try {
       const updatedOrder = await this.orderService.update(id, newUpdates);
+      if (updatedOrder) {
+        const updatedOrderDetail =
+          this.orderDetailService.update(updateOrderDetail);
+        return updatedOrderDetail;
+      }
     } catch (err) {
       console.log('err', err);
     }
-
-    // if (updatedOrder) {
-    //   const updated = this.orderDetailService.update(updateOrderDetail);
-    // }
 
     // res.json({ finished: 'fin' });
   }
