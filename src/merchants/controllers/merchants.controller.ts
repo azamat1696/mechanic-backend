@@ -24,7 +24,7 @@ import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 // Pdf
 import { compileTemplate } from '../.././utils/helpers';
-// import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer';
 
 // Event Emitter
 import { MinimumStockEvent } from '../event-emitter/event-emitter';
@@ -810,45 +810,45 @@ export class MerchantsController {
   ______________
   */
 
-  // @Post('purchase-order')
-  // @UseGuards(JwtAuthGuard)
-  // async root(
-  //   @Request() req: any,
-  //   @Response() res: any,
-  //   @Body() purchaseIdDto: PurchaseIdDto
-  // ) {
-  //   const { email } = req.user;
-  //   const merchant = await this.merchantsService.findByEmail(email);
-  //   const { orderId } = purchaseIdDto;
+  @Post('purchase-order')
+  @UseGuards(JwtAuthGuard)
+  async root(
+    @Request() req: any,
+    @Response() res: any,
+    @Body() purchaseIdDto: PurchaseIdDto
+  ) {
+    const { email } = req.user;
+    const merchant = await this.merchantsService.findByEmail(email);
+    const { orderId } = purchaseIdDto;
 
-  //   if (merchant) {
-  //     const { id } = merchant;
-  //     const orders = await this.purchaseService.getMerchantOrders(id);
+    if (merchant) {
+      const { id } = merchant;
+      const orders = await this.purchaseService.getMerchantOrders(id);
 
-  //     if (orders) {
-  //       const foundOrder = orders.find((o: any) => o.id === orderId);
-  //       const pds = await this.purchaseDetailService.findPurchaseDetailByOrder(
-  //         orderId
-  //       );
+      if (orders) {
+        const foundOrder = orders.find((o: any) => o.id === orderId);
+        const pds = await this.purchaseDetailService.findPurchaseDetailByOrder(
+          orderId
+        );
 
-  //       const totalPrice = pds
-  //         .map((item) => item.quantity * item.product.retailPrice)
-  //         .reduce((acc, curr) => acc + curr);
+        const totalPrice = pds
+          .map((item) => item.quantity * item.product.retailPrice)
+          .reduce((acc, curr) => acc + curr);
 
-  //       const browser = await puppeteer.launch();
-  //       const page = await browser.newPage();
-  //       const content = await compileTemplate('purchase-order');
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        const content = await compileTemplate('purchase-order');
 
-  //       if (content) {
-  //         await page.setContent(
-  //           content({ order: foundOrder, items: pds, total: totalPrice })
-  //         );
-  //         const pdf = await page.pdf();
-  //         return res.end(pdf);
-  //       }
-  //     }
-  //   }
-  // }
+        if (content) {
+          await page.setContent(
+            content({ order: foundOrder, items: pds, total: totalPrice })
+          );
+          const pdf = await page.pdf();
+          return res.end(pdf);
+        }
+      }
+    }
+  }
 
   /*
   ______________
@@ -862,45 +862,45 @@ export class MerchantsController {
   _______
   */
 
-  // @Post('invoice')
-  // @UseGuards(JwtAuthGuard)
-  // async getInvoice(
-  //   @Request() req: any,
-  //   @Response() res: any,
-  //   @Body() orderIdDto: OrderIdDto
-  // ) {
-  //   const { email } = req.user;
-  //   const merchant = await this.merchantsService.findByEmail(email);
-  //   const { orderId } = orderIdDto;
+  @Post('invoice')
+  @UseGuards(JwtAuthGuard)
+  async getInvoice(
+    @Request() req: any,
+    @Response() res: any,
+    @Body() orderIdDto: OrderIdDto
+  ) {
+    const { email } = req.user;
+    const merchant = await this.merchantsService.findByEmail(email);
+    const { orderId } = orderIdDto;
 
-  //   if (merchant) {
-  //     const order = await this.orderService.findOne(orderId);
-  //     console.log('order', order);
+    if (merchant) {
+      const order = await this.orderService.findOne(orderId);
+      console.log('order', order);
 
-  //     const orderDetail = await this.orderDetailService.findByOrderId(orderId);
-  //     console.log('orderDetail', orderDetail);
+      const orderDetail = await this.orderDetailService.findByOrderId(orderId);
+      console.log('orderDetail', orderDetail);
 
-  //     if (order && orderDetail) {
-  //       const totalPrice = orderDetail
-  //         .map((item) => item.quantity * item.product.retailPrice)
-  //         .reduce((acc, curr) => acc + curr);
-  //       const browser = await puppeteer.launch();
-  //       const page = await browser.newPage();
-  //       const content = await compileTemplate('invoice');
-  //       if (content) {
-  //         await page.setContent(
-  //           content({
-  //             order: order,
-  //             orderDetail: orderDetail,
-  //             totalPrice: totalPrice,
-  //           })
-  //         );
-  //         const pdf = await page.pdf();
-  //         return res.end(pdf);
-  //       }
-  //     }
-  //   }
-  // }
+      if (order && orderDetail) {
+        const totalPrice = orderDetail
+          .map((item) => item.quantity * item.product.retailPrice)
+          .reduce((acc, curr) => acc + curr);
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        const content = await compileTemplate('invoice');
+        if (content) {
+          await page.setContent(
+            content({
+              order: order,
+              orderDetail: orderDetail,
+              totalPrice: totalPrice,
+            })
+          );
+          const pdf = await page.pdf();
+          return res.end(pdf);
+        }
+      }
+    }
+  }
 
   /*
   _______
