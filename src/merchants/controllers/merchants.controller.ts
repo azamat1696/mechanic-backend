@@ -837,6 +837,7 @@ export class MerchantsController {
 
         const browser = await puppeteer.launch({
           ignoreDefaultArgs: ['--disable-extensions'],
+          args: ['--no-sandbox'],
         });
         const page = await browser.newPage();
         const content = await compileTemplate('purchase-order');
@@ -888,6 +889,7 @@ export class MerchantsController {
           .reduce((acc, curr) => acc + curr);
         const browser = await puppeteer.launch({
           ignoreDefaultArgs: ['--disable-extensions'],
+          args: ['--no-sandbox'],
         });
         const page = await browser.newPage();
         const content = await compileTemplate('invoice');
