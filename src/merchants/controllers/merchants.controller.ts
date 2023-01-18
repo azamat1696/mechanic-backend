@@ -835,7 +835,9 @@ export class MerchantsController {
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+          ignoreDefaultArgs: ['--disable-extensions'],
+        });
         const page = await browser.newPage();
         const content = await compileTemplate('purchase-order');
 
@@ -884,7 +886,9 @@ export class MerchantsController {
         const totalPrice = orderDetail
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+          ignoreDefaultArgs: ['--disable-extensions'],
+        });
         const page = await browser.newPage();
         const content = await compileTemplate('invoice');
         if (content) {
