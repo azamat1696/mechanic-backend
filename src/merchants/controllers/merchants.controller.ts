@@ -836,8 +836,8 @@ export class MerchantsController {
           .reduce((acc, curr) => acc + curr);
 
         const browser = await puppeteer.launch({
-          executablePath:
-            '/Users/halil.efecan/.cache/puppeteer/chrome/win64-1069273/chrome-win',
+          // executablePath:
+          //   '/Users/halil.efecan/.cache/puppeteer/chrome/win64-1069273/chrome-win',
           ignoreDefaultArgs: ['--disable-extensions'],
           args: ['--no-sandbox'],
         });
