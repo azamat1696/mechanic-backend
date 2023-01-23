@@ -835,12 +835,15 @@ export class MerchantsController {
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
 
-        const browser = await puppeteer.launch({
-          // executablePath:
-          //   '/Users/halil.efecan/.cache/puppeteer/chrome/win64-1069273/chrome-win',
-          ignoreDefaultArgs: ['--disable-extensions'],
-          args: ['--no-sandbox'],
-        });
+        const browser = await puppeteer
+          .launch
+          //   {
+          //   // executablePath:
+          //   //   '/Users/halil.efecan/.cache/puppeteer/chrome/win64-1069273/chrome-win',
+          //   ignoreDefaultArgs: ['--disable-extensions'],
+          //   args: ['--no-sandbox'],
+          // }
+          ();
         const page = await browser.newPage();
         const content = await compileTemplate('purchase-order');
 
@@ -889,10 +892,13 @@ export class MerchantsController {
         const totalPrice = orderDetail
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
-        const browser = await puppeteer.launch({
-          ignoreDefaultArgs: ['--disable-extensions'],
-          args: ['--no-sandbox'],
-        });
+        const browser = await puppeteer
+          .launch
+          //   {
+          //   ignoreDefaultArgs: ['--disable-extensions'],
+          //   args: ['--no-sandbox'],
+          // }
+          ();
         const page = await browser.newPage();
         const content = await compileTemplate('invoice');
         if (content) {
