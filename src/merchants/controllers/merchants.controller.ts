@@ -835,7 +835,9 @@ export class MerchantsController {
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+          args: ['--no-sandbox'],
+        });
         //   {
         //   // executablePath:
         //   //   '/Users/halil.efecan/.cache/puppeteer/chrome/win64-1069273/chrome-win',
@@ -891,7 +893,9 @@ export class MerchantsController {
         const totalPrice = orderDetail
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+          args: ['--no-sandbox'],
+        });
         //   {
         //   ignoreDefaultArgs: ['--disable-extensions'],
         //   args: ['--no-sandbox'],
