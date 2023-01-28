@@ -835,24 +835,24 @@ export class MerchantsController {
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
 
-        const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-        //   {
-        //   // executablePath:
-        //   //   '/Users/halil.efecan/.cache/puppeteer/chrome/win64-1069273/chrome-win',
-        //   ignoreDefaultArgs: ['--disable-extensions'],
-        //   args: ['--no-sandbox'],
+        res.json({
+          order: foundOrder,
+          items: pds,
+          total: totalPrice,
+        });
+
+        // const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+
+        // const page = await browser.newPage();
+        // const content = await compileTemplate('purchase-order');
+
+        // if (content) {
+        //   await page.setContent(
+        //     content({ order: foundOrder, items: pds, total: totalPrice })
+        //   );
+        //   const pdf = await page.pdf();
+        //   return res.end(pdf);
         // }
-
-        const page = await browser.newPage();
-        const content = await compileTemplate('purchase-order');
-
-        if (content) {
-          await page.setContent(
-            content({ order: foundOrder, items: pds, total: totalPrice })
-          );
-          const pdf = await page.pdf();
-          return res.end(pdf);
-        }
       }
     }
   }
@@ -891,25 +891,28 @@ export class MerchantsController {
         const totalPrice = orderDetail
           .map((item) => item.quantity * item.product.retailPrice)
           .reduce((acc, curr) => acc + curr);
-        const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-        //   {
-        //   ignoreDefaultArgs: ['--disable-extensions'],
-        //   args: ['--no-sandbox'],
-        // }
 
-        const page = await browser.newPage();
-        const content = await compileTemplate('invoice');
-        if (content) {
-          await page.setContent(
-            content({
-              order: order,
-              orderDetail: orderDetail,
-              totalPrice: totalPrice,
-            })
-          );
-          const pdf = await page.pdf();
-          return res.end(pdf);
-        }
+        res.json({
+          order,
+          orderDetail,
+          totalPrice,
+        });
+
+        // const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+
+        // const page = await browser.newPage();
+        // const content = await compileTemplate('invoice');
+        // if (content) {
+        //   await page.setContent(
+        //     content({
+        //       order: order,
+        //       orderDetail: orderDetail,
+        //       totalPrice: totalPrice,
+        //     })
+        //   );
+        //   const pdf = await page.pdf();
+        //   return res.end(pdf);
+        // }
       }
     }
   }

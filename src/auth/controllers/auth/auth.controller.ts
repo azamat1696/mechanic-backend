@@ -49,7 +49,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('merchant')
   checkTokenMerchant(@Request() req) {
-    console.log('req', req);
+    // console.log('req', req);
     return this.merchantsService.findByEmail(req.user.email);
   }
 }
