@@ -17,6 +17,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+
 import { DataSource } from 'typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express, response } from 'express';
@@ -550,8 +551,8 @@ export class MerchantsController {
     const merchant = await this.merchantsService.findByEmail(email);
     const { id } = merchant;
     if (merchant) {
-      const cust = await this.suppliersService.findSuppliersByMerchant(id);
-      return res.json(cust);
+      const suppliers = await this.suppliersService.findSuppliersByMerchant(id);
+      return res.json({ suppliers: suppliers });
     }
   }
 
@@ -659,6 +660,7 @@ export class MerchantsController {
       const { id } = merchant;
       const orders = await this.purchaseService.getMerchantOrders(id);
       if (orders) {
+        console.log('orders', orders);
         return res.json({ orders });
       }
     }
@@ -757,9 +759,10 @@ export class MerchantsController {
     const merchant = await this.merchantsService.findByEmail(email);
     if (merchant) {
       const { id } = merchant;
-      const customer = await this.usersService.findCustomersByMerchant(id);
-      if (customer) {
-        return res.json(customer);
+      const customers = await this.usersService.findCustomersByMerchant(id);
+      console.log('customers', customers);
+      if (customers) {
+        return res.json({ customers: customers });
       }
     }
   }
