@@ -492,60 +492,60 @@ export class MerchantsController {
 
     // Call putObject to update the image file
 
-    const { originalname, buffer, mimetype, fieldname } = req.file;
+    if (req.file) {
+      const { originalname, buffer, mimetype, fieldname } = req.file;
+      console.log('file', req.file);
+      // AWS
+      const bucketName = this.configService.get('BUCKET_NAME');
+      const bucketRegion = this.configService.get('BUCKET_REGION');
+      const accessKey = this.configService.get('ACCESS_KEY');
+      const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
 
-    // AWS
-    const bucketName = this.configService.get('BUCKET_NAME');
-    const bucketRegion = this.configService.get('BUCKET_REGION');
-    const accessKey = this.configService.get('ACCESS_KEY');
-    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
+      // S3 Credentials
+      const s3 = new S3Client({
+        credentials: {
+          accessKeyId: accessKey,
+          secretAccessKey: secretAccessKey,
+        },
+        region: bucketRegion,
+      });
 
-    // S3 Credentials
-    const s3 = new S3Client({
-      credentials: {
-        accessKeyId: accessKey,
-        secretAccessKey: secretAccessKey,
-      },
-      region: bucketRegion,
-    });
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
 
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
+      const buff = await sharp(buffer)
+        .resize({
+          width: 60,
+          height: 60,
+          fit: 'fill',
+        })
+        .toBuffer();
+      console.log('buff', buff);
 
-    const buff = await sharp(buffer)
-      .resize({
-        width: 60,
-        height: 60,
-        // fit: 'contain',
-        fit: 'fill',
-      })
-      .toBuffer();
-    console.log('buff', buff);
+      const params = {
+        Bucket: bucketName,
+        Key: uniqueName,
+        Body: buff,
+        ContentType: mimetype,
+      };
 
-    const params = {
-      Bucket: bucketName,
-      Key: uniqueName,
-      Body: buff,
-      ContentType: mimetype,
-    };
+      console.log('params', params);
+      const command = new PutObjectCommand(params);
+      await s3.send(command);
 
-    console.log('params', params);
-    const command = new PutObjectCommand(params);
-    await s3.send(command);
-
-    if (file) {
       updatedProduct = await this.productsService.update(id, {
         ...updateProductDto,
         image: uniqueName,
-        // `http://localhost:8000/public/` +
-        // basename('images') +
-        // `/${file.filename}`,
       });
     } else {
       updatedProduct = await this.productsService.update(id, {
         ...updateProductDto,
       });
     }
+
+    // if (file) {
+    // } else {
+    // }
     // res.end();
 
     return res.json({ UpdatedProduct: [updatedProduct] });
