@@ -35,7 +35,7 @@ export class ProductService {
   async add(
     merchant: any,
     supplier: Supplier,
-    createProductDto: CreateProductDto
+    createProductDto /*: CreateProductDto*/
   ) {
     console.log('supplier =>', supplier);
     const updatedCreateProductDto = {

@@ -66,6 +66,9 @@ export class Product {
   image: string;
 
   @Column()
+  url: string;
+
+  @Column()
   product_code: string;
 
   @CreateDateColumn()

@@ -15,6 +15,8 @@ export class UpdateProductDto {
 
   image: string;
 
+  imageUrl: string;
+
   @IsString()
   product_code: string;
 }

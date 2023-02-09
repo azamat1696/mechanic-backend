@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import * as hbs from 'hbs';
+// import * as hbs from 'hbs';
 import 'dotenv/config';
 import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
 
@@ -19,9 +19,9 @@ async function bootstrap() {
 
   // Handlebars
   app.setViewEngine('hbs');
-  hbs.registerHelper('multiply', (a, b) => {
-    return a * b;
-  });
+  // hbs.registerHelper('multiply', (a, b) => {
+  //   return a * b;
+  // });
 
   const port = process.env.PORT || 8000;
   console.log('PORT', port);

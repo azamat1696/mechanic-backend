@@ -14,8 +14,6 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 
 import { DataSource } from 'typeorm';
@@ -89,6 +87,9 @@ import { UpdatePurchaseOrderDetail } from '../dto/purchaseDetail/purchaseDetail.
 // Jobs
 import { CreateJobDto } from '../dto/jobs/createJob.dto';
 
+// S3
+import { CreateImageDto } from '../dto/s3/create.dto';
+
 // Guards
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
@@ -97,8 +98,19 @@ import { queryStockByMerchant } from '../../db/queries/queries';
 
 // External
 import { extname } from 'path';
-import { diskStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
 import { basename } from 'path';
+
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import process from 'process';
+import { ConfigService } from '@nestjs/config';
+
+import sharp from 'sharp';
 
 interface Products {
   productId: number;
@@ -118,6 +130,7 @@ export class MerchantsController {
     private readonly purchaseDetailService: PurchaseDetailService,
     private readonly jobService: JobService,
     private readonly jobDetailService: JobDetailService,
+    private readonly configService: ConfigService,
     private eventEmitter: EventEmitter2,
     private dataSource: DataSource
   ) {}
@@ -145,7 +158,64 @@ export class MerchantsController {
   async findMerchProducts(@Request() req, @Response() res) {
     const merchant = await this.merchantsService.findByEmail(req.user.email);
     const products = await this.productsService.getProductsByMerch(merchant);
-    res.json({ products });
+
+    // AWS
+    const bucketName = this.configService.get('BUCKET_NAME');
+    const bucketRegion = this.configService.get('BUCKET_REGION');
+    const accessKey = this.configService.get('ACCESS_KEY');
+    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
+
+    // S3 Credentials
+    const s3 = new S3Client({
+      credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretAccessKey,
+      },
+      region: bucketRegion,
+    });
+
+    // Generate url for images from S3 bucket
+    const arr = [];
+    const getUrl = async (prod) => {
+      for await (const p of prod) {
+        const objParams = {
+          Bucket: bucketName,
+          Key: p.image,
+        };
+
+        const command = new GetObjectCommand(objParams);
+        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        const newObj = {
+          ...p,
+          url,
+        };
+        // console.log('newObj', newObj);
+        arr.push(newObj);
+      }
+    };
+
+    await getUrl(products);
+
+    // console.log('arr', arr);
+    // const nw = products.map(async (p): Promise<any> => {
+    //   const objParams = {
+    //     Bucket: bucketName,
+    //     Key: p.image,
+    //   };
+
+    //   const command = new GetObjectCommand(objParams);
+    //   await getSignedUrl(s3, command, { expiresIn: 3600 }).then((res) => {
+    //     console.log('res', res);
+    //     return {
+    //       ...p,
+    //       url: res,
+    //     };
+    //   });
+    // });
+    // console.log('nw', nw);
+    // const mappedArray = Promise.all(nw);
+    // console.log('mappedArray', mappedArray);
+    res.json({ products: arr });
   }
 
   @Get('check-env')
@@ -172,7 +242,48 @@ export class MerchantsController {
     );
     // console.log('stockView', stockView);
 
-    return stockView;
+    // AWS
+    const bucketName = this.configService.get('BUCKET_NAME');
+    const bucketRegion = this.configService.get('BUCKET_REGION');
+    const accessKey = this.configService.get('ACCESS_KEY');
+    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
+
+    // S3 Credentials
+    const s3 = new S3Client({
+      credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretAccessKey,
+      },
+      region: bucketRegion,
+    });
+
+    // Generate url for images from S3 bucket
+    const arr = [];
+    const getUrl = async (prod) => {
+      for await (const p of prod) {
+        const objParams = {
+          Bucket: bucketName,
+          Key: p.image,
+        };
+
+        const command = new GetObjectCommand(objParams);
+        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        const newObj = {
+          ...p,
+          url,
+        };
+        // console.log('newObj', newObj);
+        arr.push(newObj);
+      }
+    };
+
+    await getUrl(stockView);
+
+    const ret = {
+      stockView,
+      arr,
+    };
+    return ret;
   }
 
   /*
@@ -210,19 +321,7 @@ export class MerchantsController {
   @Post('create-product')
   @UsePipes(ValidationPipe)
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './public/images',
-        filename: function (req, image, cb) {
-          const ext = extname(image.originalname);
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, image.fieldname + '-' + uniqueSuffix + ext);
-        },
-      }),
-    })
-  )
+  @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
   async createProduct(
     @Body() createProductDto: CreateProductDto,
     @Request() req: any,
@@ -232,50 +331,154 @@ export class MerchantsController {
     const { email } = req.user;
     const { supplierId } = createProductDto;
 
-    console.log('createProduct', createProductDto);
-
     const foundMerchant = await this.merchantsService.findByEmail(email);
     const foundSupplier = await this.suppliersService.findOne(supplierId);
 
-    if (foundMerchant && foundSupplier) {
-      const image =
-        `http://localhost:8000/public/` +
-        basename('images') +
-        `/${file.filename}`;
+    console.log('merchant', foundMerchant);
+    console.log('foundSupplier', foundSupplier);
+    console.log('req.file', req.file);
 
-      const savedProduct = await this.productsService.add(
-        foundMerchant,
-        foundSupplier,
-        {
-          ...createProductDto,
-          image,
-        }
-      );
-      return res.json({ CreatedProduct: [savedProduct] });
+    const { originalname, buffer, mimetype, fieldname } = req.file;
+    // AWS
+    const bucketName = this.configService.get('BUCKET_NAME');
+    const bucketRegion = this.configService.get('BUCKET_REGION');
+    const accessKey = this.configService.get('ACCESS_KEY');
+    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
+
+    // S3 Credentials
+    const s3 = new S3Client({
+      credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretAccessKey,
+      },
+      region: bucketRegion,
+    });
+
+    if (foundMerchant && foundSupplier) {
+      // Unique Filename when uploaded to S3 bucket
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
+
+      const buff = await sharp(buffer)
+        .resize({
+          width: 60,
+          height: 60,
+          // fit: 'contain',
+        })
+        .toBuffer();
+      console.log('buff', buff);
+      // try {
+      // } catch (err) {
+      //   console.log('err', err);
+      // }
+
+      const params = {
+        Bucket: bucketName,
+        Key: uniqueName,
+        Body: buff,
+        ContentType: mimetype,
+      };
+
+      console.log('params', params);
+      const command = new PutObjectCommand(params);
+
+      try {
+        await s3.send(command);
+        const savedProduct = await this.productsService.add(
+          foundMerchant,
+          foundSupplier,
+          {
+            ...createProductDto,
+            image: uniqueName,
+          }
+        );
+
+        return res.json({ CreatedProduct: [savedProduct] });
+      } catch (err) {
+        console.log(err);
+      }
     } else {
       return 'merchant not found';
     }
+    // const { email } = req.user;
+    // const { supplierId } = createProductDto;
+    // console.log('createProduct', createProductDto);
+    // const foundMerchant = await this.merchantsService.findByEmail(email);
+    // const foundSupplier = await this.suppliersService.findOne(supplierId);
+    // if (foundMerchant && foundSupplier) {
+    //   const image =
+    //     `http://localhost:8000/public/` +
+    //     basename('images') +
+    //     `/${file.filename}`;
+    //   const savedProduct = await this.productsService.add(
+    //     foundMerchant,
+    //     foundSupplier,
+    //     {
+    //       ...createProductDto,
+    //       image,
+    //     }
+    //   );
+    //   return res.json({ CreatedProduct: [savedProduct] });
+    // } else {
+    //   return 'merchant not found';
+    // }
   }
+
+  // @Post('update-product')
+  // @UseGuards(JwtAuthGuard)
+  // @UseInterceptors(
+  //   FileInterceptor('image', {
+  //     // storage: memoryStorage(),
+  //     storage: diskStorage({
+  //       destination: './public/images',
+  //       filename: function (req, image, cb) {
+  //         const ext = extname(image.originalname);
+  //         const uniqueSuffix =
+  //           Date.now() + '-' + Math.round(Math.random() * 1e9);
+  //         cb(null, image.fieldname + '-' + uniqueSuffix + ext);
+  //       },
+  //     }),
+  //   })
+  // )
+  // async updateProduct(
+  //   @Body() updateProductDto: UpdateProductDto,
+  //   @UploadedFile() file: Express.Multer.File,
+  //   @Request() req: any,
+  //   @Response() res: any
+  // ) {
+  //   console.log('req.body', req.body);
+  //   console.log('updateProductDto', updateProductDto);
+  //   console.log('file', file);
+  //   const { id } = updateProductDto;
+
+  //   let updatedProduct: any;
+
+  //   console.log('updateProductDto', updateProductDto);
+
+  //   if (file) {
+  //     updatedProduct = await this.productsService.update(id, {
+  //       ...updateProductDto,
+  //       image:
+  //         `http://localhost:8000/public/` +
+  //         basename('images') +
+  //         `/${file.filename}`,
+  //     });
+  //   } else {
+  //     updatedProduct = await this.productsService.update(id, {
+  //       ...updateProductDto,
+  //     });
+  //   }
+
+  //   return res.json({ UpdatedProduct: [updatedProduct] });
+  // }
 
   @Post('update-product')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './public/images',
-        filename: function (req, image, cb) {
-          const ext = extname(image.originalname);
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, image.fieldname + '-' + uniqueSuffix + ext);
-        },
-      }),
-    })
-  )
+  @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
   async updateProduct(
     @Body() updateProductDto: UpdateProductDto,
-    @Request() req: any,
     @UploadedFile() file: Express.Multer.File,
+    @Request() req: any,
     @Response() res: any
   ) {
     console.log('req.body', req.body);
@@ -287,19 +490,64 @@ export class MerchantsController {
 
     console.log('updateProductDto', updateProductDto);
 
+    // Call putObject to update the image file
+
+    const { originalname, buffer, mimetype, fieldname } = req.file;
+
+    // AWS
+    const bucketName = this.configService.get('BUCKET_NAME');
+    const bucketRegion = this.configService.get('BUCKET_REGION');
+    const accessKey = this.configService.get('ACCESS_KEY');
+    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
+
+    // S3 Credentials
+    const s3 = new S3Client({
+      credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretAccessKey,
+      },
+      region: bucketRegion,
+    });
+
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
+
+    const buff = await sharp(buffer)
+      .resize({
+        width: 60,
+        height: 60,
+        // fit: 'contain',
+        fit: 'fill',
+      })
+      .toBuffer();
+    console.log('buff', buff);
+
+    const params = {
+      Bucket: bucketName,
+      Key: uniqueName,
+      Body: buff,
+      ContentType: mimetype,
+    };
+
+    console.log('params', params);
+    const command = new PutObjectCommand(params);
+    await s3.send(command);
+
     if (file) {
       updatedProduct = await this.productsService.update(id, {
         ...updateProductDto,
-        image:
-          `http://localhost:8000/public/` +
-          basename('images') +
-          `/${file.filename}`,
+        image: uniqueName,
+        // `http://localhost:8000/public/` +
+        // basename('images') +
+        // `/${file.filename}`,
       });
     } else {
       updatedProduct = await this.productsService.update(id, {
         ...updateProductDto,
       });
     }
+    // res.end();
+
     return res.json({ UpdatedProduct: [updatedProduct] });
   }
 
@@ -409,17 +657,21 @@ export class MerchantsController {
         createOrderDto
       );
 
+      console.log('createdOrder', createdOrder);
+
       if (createdOrder) {
         const { products } = createOrderDto;
         products.forEach(async (p): Promise<any> => {
-          const { productId, quantity, price } = p;
-          const foundProduct = await this.productsService.findOne(productId);
+          console.log('p', p);
+          const { id, quantity, retailPrice } = p;
+          const foundProduct = await this.productsService.findOne(id);
+          console.log('foundProduct', foundProduct);
           if (foundProduct) {
             await this.orderDetailService.add(
               createdOrder,
               foundProduct,
               quantity,
-              price
+              retailPrice
             );
           }
         });
@@ -588,6 +840,7 @@ export class MerchantsController {
     @Request() req: any,
     @Response() res: any
   ) {
+    console.log('createPurchaseOrderDto', createPurchaseOrderDto);
     const { products, supplierId } = createPurchaseOrderDto;
     const { email } = req.user;
 
@@ -607,34 +860,35 @@ export class MerchantsController {
         // Loop over each product
         products.forEach(async (p): Promise<Products> => {
           console.log('p', p);
-          const { productId, quantity } = p;
-          const foundProduct = await this.productsService.findOne(productId);
+          const { productId, quantity, id } = p;
+          const foundProduct = await this.productsService.findOne(id);
+          console.log('foundProduct', foundProduct);
+
           if (foundProduct) {
             const createdPD = await this.purchaseDetailService.add(
               foundOrder,
               foundProduct,
               quantity
             );
-
             // Order Cretaed Event
-            const orderCreatedEvent = new OrderCreatedEvent();
-            console.log('orderCreatedEvent', orderCreatedEvent);
-            orderCreatedEvent.supplierId = foundOrder.supplierId;
-            console.log('orderCreatedEvent', orderCreatedEvent);
-            const emitting = this.eventEmitter.emit(
-              'order.created',
-              orderCreatedEvent
-            );
-            console.log('emitting', emitting);
-            // Order Cretaed Event
-            this.eventEmitter.on(
-              'order.created',
-              function () {
-                console.log('The event was raised!');
-              },
-              { async: true }
-            );
-
+            // const orderCreatedEvent = new OrderCreatedEvent();
+            // console.log('orderCreatedEvent', orderCreatedEvent);
+            // orderCreatedEvent.supplierId = foundOrder.supplierId;
+            // console.log('orderCreatedEvent', orderCreatedEvent);
+            // const emitting = this.eventEmitter.emit(
+            //   'order.created',
+            //   orderCreatedEvent
+            // );
+            // console.log('emitting', emitting);
+            // // Order Cretaed Event
+            // this.eventEmitter.on(
+            //   'order.created',
+            //   function () {
+            //     console.log('The event was raised!');
+            //   },
+            //   { async: true }
+            // );
+            console.log('createdPD', createdPD);
             return createdPD;
           }
         });
@@ -925,4 +1179,84 @@ export class MerchantsController {
   INVOICE
   _______
   */
+
+  /* IMG UPLOAD S3 */
+  @Post('upload')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(ValidationPipe)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+    })
+  )
+  async uploadToS3(
+    @Body() createImageDto: CreateImageDto,
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Response() res: any
+  ) {
+    const { email } = req.user;
+    const { supplierId } = createImageDto;
+
+    const foundMerchant = await this.merchantsService.findByEmail(email);
+    const foundSupplier = await this.suppliersService.findOne(supplierId);
+
+    console.log('merchant', foundMerchant);
+    console.log('foundSupplier', foundSupplier);
+    console.log('createImageDto', createImageDto);
+    console.log('req.file', req.file);
+
+    const { originalname, buffer, mimetype, fieldname } = req.file;
+
+    // AWS
+    const bucketName = this.configService.get('BUCKET_NAME');
+    const bucketRegion = this.configService.get('BUCKET_REGION');
+    const accessKey = this.configService.get('ACCESS_KEY');
+    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
+
+    // S3 Credentials
+    const s3 = new S3Client({
+      credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretAccessKey,
+      },
+      region: bucketRegion,
+    });
+
+    if (foundMerchant && foundSupplier) {
+      // Unique Filename when uploaded to S3 bucket
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
+
+      const params = {
+        Bucket: bucketName,
+        Key: uniqueName,
+        Body: buffer,
+        ContentType: mimetype,
+      };
+
+      console.log('params', params);
+      const command = new PutObjectCommand(params);
+
+      try {
+        await s3.send(command);
+        const savedProduct = await this.productsService.add(
+          foundMerchant,
+          foundSupplier,
+          {
+            ...createImageDto,
+            image: uniqueName,
+          }
+        );
+
+        return res.json({ CreatedProduct: [savedProduct] });
+      } catch (err) {
+        console.log(err);
+      }
+    } else {
+      return 'merchant not found';
+    }
+
+    res.end();
+  }
 }
