@@ -13,6 +13,7 @@ import { UsersService } from '../../../users/services/users.service';
 import { MerchantsService } from '../../../merchants/services/merchants.service';
 import { LocalAuthGuard } from '../../guards/local-auth.guard';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { ApiAcceptedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -32,6 +33,7 @@ export class AuthController {
   @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(LocalAuthGuard)
   @Post('login/merchant')
+  @ApiTags('Auth')
   loginMerchant(@Request() req) {
     const { email, password } = req.body;
     console.log('email', email);
@@ -48,6 +50,7 @@ export class AuthController {
   @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(JwtAuthGuard)
   @Get('merchant')
+  @ApiTags('Auth')
   checkTokenMerchant(@Request() req) {
     // console.log('req', req);
     return this.merchantsService.findByEmail(req.user.email);

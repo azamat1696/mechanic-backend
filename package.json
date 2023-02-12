@@ -34,6 +34,7 @@
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/sequelize": "^8.0.1",
     "@nestjs/serve-static": "^3.0.0",
+    "@nestjs/swagger": "^6.2.1",
     "@nestjs/typeorm": "^8.1.4",
     "@types/hbs": "^4.0.1",
     "@types/sharp": "^0.31.1",

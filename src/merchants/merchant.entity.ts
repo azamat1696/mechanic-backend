@@ -64,6 +64,18 @@ export class Merchant {
   @Column()
   email: string;
 
+  @Column()
+  telephone: string;
+
+  @Column()
+  address1: string;
+
+  @Column()
+  address2: string;
+
+  @Column()
+  address3: string;
+
   @Exclude()
   @Column()
   password: string;

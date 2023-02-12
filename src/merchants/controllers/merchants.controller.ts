@@ -14,16 +14,13 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  HttpException,
 } from '@nestjs/common';
 
 import { DataSource } from 'typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Express, response } from 'express';
+import { Express } from 'express';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-
-// Pdf
-import { compileTemplate } from '../.././utils/helpers';
-import puppeteer from 'puppeteer';
 
 // Event Emitter
 import { MinimumStockEvent } from '../event-emitter/event-emitter';
@@ -50,6 +47,7 @@ import { CreateMerchantsDto } from '../dto/merchants/create-merchant.dto';
 import { CreateProductDto } from '../dto/merchants/createProduct.dto';
 import { DeleteCustomerDto } from '../dto/merchants/deleteCustomer';
 import { GetMerchantDto } from '../dto/merchants/getMerchant.dto';
+import { UpdateMerchantDetailsDto } from '../dto/merchants/updateMerchantDetails.dto';
 
 // Suppliers
 import { CreateSupplierDto } from '../dto/suppliers/create.dto';
@@ -97,20 +95,21 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { queryStockByMerchant } from '../../db/queries/queries';
 
 // External
-import { extname } from 'path';
-import { diskStorage, memoryStorage } from 'multer';
-import { basename } from 'path';
+import { memoryStorage } from 'multer';
 
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import process from 'process';
 import { ConfigService } from '@nestjs/config';
 
-import sharp from 'sharp';
+import { createImgName } from '../../utils/createImgName';
+import {
+  ApiAcceptedResponse,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { HttpCode } from '@nestjs/common/decorators';
+import { HttpStatus } from '@nestjs/common/enums';
 
 interface Products {
   productId: number;
@@ -136,92 +135,20 @@ export class MerchantsController {
   ) {}
 
   @Get()
+  @ApiTags('Merchant')
   async getUsers() {
     const merch = this.merchantsService.findAll();
     if (merch) return merch;
-
-    // try {
-    //   const merch = this.merchantsService.findAll();
-    //   console.log('typeof', await merch);
-    //   if ((await merch) === undefined)
-    //     throw new HttpException('Not found!', HttpStatus.BAD_REQUEST);
-    //   if (await merch) return merch;
-    //   // else throw new HttpException('Not found!', HttpStatus.BAD_REQUEST);
-    // } catch (err) {
-    //   console.log('err', err);
-    //   return err;
-    // }
   }
 
   @Get('list-products')
+  @ApiTags('Product')
   @UseGuards(JwtAuthGuard)
   async findMerchProducts(@Request() req, @Response() res) {
     const merchant = await this.merchantsService.findByEmail(req.user.email);
     const products = await this.productsService.getProductsByMerch(merchant);
-
-    // AWS
-    const bucketName = this.configService.get('BUCKET_NAME');
-    const bucketRegion = this.configService.get('BUCKET_REGION');
-    const accessKey = this.configService.get('ACCESS_KEY');
-    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
-
-    // S3 Credentials
-    const s3 = new S3Client({
-      credentials: {
-        accessKeyId: accessKey,
-        secretAccessKey: secretAccessKey,
-      },
-      region: bucketRegion,
-    });
-
-    // Generate url for images from S3 bucket
-    const arr = [];
-    const getUrl = async (prod) => {
-      for await (const p of prod) {
-        const objParams = {
-          Bucket: bucketName,
-          Key: p.image,
-        };
-
-        const command = new GetObjectCommand(objParams);
-        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-        const newObj = {
-          ...p,
-          url,
-        };
-        // console.log('newObj', newObj);
-        arr.push(newObj);
-      }
-    };
-
-    await getUrl(products);
-
-    // console.log('arr', arr);
-    // const nw = products.map(async (p): Promise<any> => {
-    //   const objParams = {
-    //     Bucket: bucketName,
-    //     Key: p.image,
-    //   };
-
-    //   const command = new GetObjectCommand(objParams);
-    //   await getSignedUrl(s3, command, { expiresIn: 3600 }).then((res) => {
-    //     console.log('res', res);
-    //     return {
-    //       ...p,
-    //       url: res,
-    //     };
-    //   });
-    // });
-    // console.log('nw', nw);
-    // const mappedArray = Promise.all(nw);
-    // console.log('mappedArray', mappedArray);
+    const arr = await this.merchantsService.getSignedUrl(products);
     res.json({ products: arr });
-  }
-
-  @Get('check-env')
-  async checkEnv() {
-    const env = process.env.NODE_ENV;
-    return env === 'PRODUCTION' ? 'Production' : 'Development';
   }
 
   /*
@@ -232,6 +159,8 @@ export class MerchantsController {
 
   @Post('stock')
   @UseGuards(JwtAuthGuard)
+  @ApiTags('Stock View')
+  @ApiOkResponse({ description: 'The request has succeeded' })
   async getData(@Body() getMerchantDto: GetMerchantDto) {
     // Emit Low Stock Event
     this.eventEmitter.emit('min.reached', new MinimumStockEvent());
@@ -240,44 +169,8 @@ export class MerchantsController {
     const stockView = await this.dataSource.query(
       queryStockByMerchant(Number(mId))
     );
-    // console.log('stockView', stockView);
 
-    // AWS
-    const bucketName = this.configService.get('BUCKET_NAME');
-    const bucketRegion = this.configService.get('BUCKET_REGION');
-    const accessKey = this.configService.get('ACCESS_KEY');
-    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
-
-    // S3 Credentials
-    const s3 = new S3Client({
-      credentials: {
-        accessKeyId: accessKey,
-        secretAccessKey: secretAccessKey,
-      },
-      region: bucketRegion,
-    });
-
-    // Generate url for images from S3 bucket
-    const arr = [];
-    const getUrl = async (prod) => {
-      for await (const p of prod) {
-        const objParams = {
-          Bucket: bucketName,
-          Key: p.image,
-        };
-
-        const command = new GetObjectCommand(objParams);
-        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-        const newObj = {
-          ...p,
-          url,
-        };
-        // console.log('newObj', newObj);
-        arr.push(newObj);
-      }
-    };
-
-    await getUrl(stockView);
+    const arr = await this.merchantsService.getSignedUrl(stockView);
 
     const ret = {
       stockView,
@@ -293,6 +186,8 @@ export class MerchantsController {
   */
 
   @Post('register')
+  @ApiTags('Merchant')
+  @ApiCreatedResponse({ description: 'Merchant has been created' })
   @UsePipes(ValidationPipe)
   createMerchant(@Body() createMerchantsDto: CreateMerchantsDto) {
     console.log('Password', createMerchantsDto.password);
@@ -300,6 +195,7 @@ export class MerchantsController {
   }
 
   @Put(':id')
+  @ApiTags('Merchant')
   updateMerchant(
     @Param('id') id: number,
     @Body() updateMerchantDto: UpdateMerchantsDto
@@ -307,7 +203,34 @@ export class MerchantsController {
     return this.merchantsService.update(id, updateMerchantDto);
   }
 
+  @Post('update-merchant')
+  @ApiTags('Merchant')
+  @UsePipes(ValidationPipe)
+  @UseGuards(JwtAuthGuard)
+  async updateMerch(
+    @Body() updateMerchantDetailsDto: UpdateMerchantDetailsDto,
+    @Request() req: any
+  ) {
+    const { email } = req.user;
+    console.log('req.user.email', email);
+    const foundMerchant = await this.merchantsService.findByEmail(email);
+    console.log('updateMerchantDetailsDto', updateMerchantDetailsDto);
+    if (!foundMerchant) {
+      throw new HttpException(
+        'Supplier does not exist',
+        HttpStatus.BAD_REQUEST
+      );
+    } else {
+      const { id } = foundMerchant;
+      return await this.merchantsService.updateMerchantDetails(
+        id,
+        updateMerchantDetailsDto
+      );
+    }
+  }
+
   @Delete(':id')
+  @ApiTags('Merchant')
   deleteMerchant(@Param('id') id: number) {
     return this.merchantsService.remove(id);
   }
@@ -319,160 +242,79 @@ export class MerchantsController {
   */
 
   @Post('create-product')
+  @ApiTags('Product')
   @UsePipes(ValidationPipe)
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
   async createProduct(
-    @Body() createProductDto: CreateProductDto,
     @Request() req: any,
     @UploadedFile() file: Express.Multer.File,
+    @Body() createProductDto: CreateProductDto,
     @Response() res: any
   ) {
     const { email } = req.user;
     const { supplierId } = createProductDto;
+    console.log('createProductDto', createProductDto);
 
-    const foundMerchant = await this.merchantsService.findByEmail(email);
+    const foundMerchant = this.merchantsService.findByEmail(email);
     const foundSupplier = await this.suppliersService.findOne(supplierId);
 
-    console.log('merchant', foundMerchant);
-    console.log('foundSupplier', foundSupplier);
-    console.log('req.file', req.file);
-
-    const { originalname, buffer, mimetype, fieldname } = req.file;
-    // AWS
-    const bucketName = this.configService.get('BUCKET_NAME');
-    const bucketRegion = this.configService.get('BUCKET_REGION');
-    const accessKey = this.configService.get('ACCESS_KEY');
-    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
-
-    // S3 Credentials
-    const s3 = new S3Client({
-      credentials: {
-        accessKeyId: accessKey,
-        secretAccessKey: secretAccessKey,
-      },
-      region: bucketRegion,
-    });
-
-    if (foundMerchant && foundSupplier) {
-      // Unique Filename when uploaded to S3 bucket
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
-
-      const buff = await sharp(buffer)
-        .resize({
-          width: 60,
-          height: 60,
-          // fit: 'contain',
-        })
-        .toBuffer();
-      console.log('buff', buff);
-      // try {
-      // } catch (err) {
-      //   console.log('err', err);
-      // }
-
-      const params = {
-        Bucket: bucketName,
-        Key: uniqueName,
-        Body: buff,
-        ContentType: mimetype,
-      };
-
-      console.log('params', params);
-      const command = new PutObjectCommand(params);
-
-      try {
-        await s3.send(command);
-        const savedProduct = await this.productsService.add(
-          foundMerchant,
-          foundSupplier,
-          {
-            ...createProductDto,
-            image: uniqueName,
-          }
-        );
-
-        return res.json({ CreatedProduct: [savedProduct] });
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      return 'merchant not found';
+    if (!foundSupplier) {
+      throw new HttpException(
+        'Supplier does not exist',
+        HttpStatus.BAD_REQUEST
+      );
     }
-    // const { email } = req.user;
-    // const { supplierId } = createProductDto;
-    // console.log('createProduct', createProductDto);
-    // const foundMerchant = await this.merchantsService.findByEmail(email);
-    // const foundSupplier = await this.suppliersService.findOne(supplierId);
+
+    if (!foundMerchant) {
+      throw new HttpException(
+        'Supplier does not exist',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    res.end();
+
+    // throw new HttpException('error', HttpStatus.BAD_REQUEST);
+    // res.end();
+    // console.log('req.file', req.file);
+
+    // const { originalname, buffer, mimetype, fieldname } = req.file;
+
     // if (foundMerchant && foundSupplier) {
-    //   const image =
-    //     `http://localhost:8000/public/` +
-    //     basename('images') +
-    //     `/${file.filename}`;
-    //   const savedProduct = await this.productsService.add(
-    //     foundMerchant,
-    //     foundSupplier,
-    //     {
-    //       ...createProductDto,
-    //       image,
-    //     }
-    //   );
-    //   return res.json({ CreatedProduct: [savedProduct] });
+    //   // Unique Filename when uploaded to S3 bucket
+    //   const uniqueName = createImgName(fieldname, originalname);
+
+    //   try {
+    //     await this.merchantsService.createNewImage(
+    //       uniqueName,
+    //       buffer,
+    //       mimetype,
+    //       {
+    //         width: 60,
+    //         height: 60,
+    //         fit: 'fill',
+    //       }
+    //     );
+    //     const savedProduct = await this.productsService.add(
+    //       foundMerchant,
+    //       foundSupplier,
+    //       {
+    //         ...createProductDto,
+    //         image: uniqueName,
+    //       }
+    //     );
+
+    //     return res.json({ CreatedProduct: [savedProduct] });
+    //   } catch (err) {
+    //     console.log(err);
+    //   }
     // } else {
     //   return 'merchant not found';
     // }
   }
 
-  // @Post('update-product')
-  // @UseGuards(JwtAuthGuard)
-  // @UseInterceptors(
-  //   FileInterceptor('image', {
-  //     // storage: memoryStorage(),
-  //     storage: diskStorage({
-  //       destination: './public/images',
-  //       filename: function (req, image, cb) {
-  //         const ext = extname(image.originalname);
-  //         const uniqueSuffix =
-  //           Date.now() + '-' + Math.round(Math.random() * 1e9);
-  //         cb(null, image.fieldname + '-' + uniqueSuffix + ext);
-  //       },
-  //     }),
-  //   })
-  // )
-  // async updateProduct(
-  //   @Body() updateProductDto: UpdateProductDto,
-  //   @UploadedFile() file: Express.Multer.File,
-  //   @Request() req: any,
-  //   @Response() res: any
-  // ) {
-  //   console.log('req.body', req.body);
-  //   console.log('updateProductDto', updateProductDto);
-  //   console.log('file', file);
-  //   const { id } = updateProductDto;
-
-  //   let updatedProduct: any;
-
-  //   console.log('updateProductDto', updateProductDto);
-
-  //   if (file) {
-  //     updatedProduct = await this.productsService.update(id, {
-  //       ...updateProductDto,
-  //       image:
-  //         `http://localhost:8000/public/` +
-  //         basename('images') +
-  //         `/${file.filename}`,
-  //     });
-  //   } else {
-  //     updatedProduct = await this.productsService.update(id, {
-  //       ...updateProductDto,
-  //     });
-  //   }
-
-  //   return res.json({ UpdatedProduct: [updatedProduct] });
-  // }
-
   @Post('update-product')
+  @ApiTags('Product')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
   async updateProduct(
@@ -490,48 +332,16 @@ export class MerchantsController {
 
     console.log('updateProductDto', updateProductDto);
 
-    // Call putObject to update the image file
-
     if (req.file) {
       const { originalname, buffer, mimetype, fieldname } = req.file;
       console.log('file', req.file);
-      // AWS
-      const bucketName = this.configService.get('BUCKET_NAME');
-      const bucketRegion = this.configService.get('BUCKET_REGION');
-      const accessKey = this.configService.get('ACCESS_KEY');
-      const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
+      const uniqueName = createImgName(fieldname, originalname);
 
-      // S3 Credentials
-      const s3 = new S3Client({
-        credentials: {
-          accessKeyId: accessKey,
-          secretAccessKey: secretAccessKey,
-        },
-        region: bucketRegion,
+      await this.merchantsService.createNewImage(uniqueName, buffer, mimetype, {
+        width: 60,
+        height: 60,
+        fit: 'fill',
       });
-
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
-
-      const buff = await sharp(buffer)
-        .resize({
-          width: 60,
-          height: 60,
-          fit: 'fill',
-        })
-        .toBuffer();
-      console.log('buff', buff);
-
-      const params = {
-        Bucket: bucketName,
-        Key: uniqueName,
-        Body: buff,
-        ContentType: mimetype,
-      };
-
-      console.log('params', params);
-      const command = new PutObjectCommand(params);
-      await s3.send(command);
 
       updatedProduct = await this.productsService.update(id, {
         ...updateProductDto,
@@ -543,15 +353,11 @@ export class MerchantsController {
       });
     }
 
-    // if (file) {
-    // } else {
-    // }
-    // res.end();
-
     return res.json({ UpdatedProduct: [updatedProduct] });
   }
 
   @Post('delete-single-product')
+  @ApiTags('Product')
   @UseGuards(JwtAuthGuard)
   async deleteSingleProduct(@Body() deleteProductDto: DeleteProductDto) {
     const { productId } = deleteProductDto;
@@ -559,11 +365,13 @@ export class MerchantsController {
   }
 
   @Get('find-products')
+  @ApiTags('Product')
   async findProducts() {
     return await this.productsService.findAll();
   }
 
   @Get('products')
+  @ApiTags('Product')
   @UseGuards(JwtAuthGuard)
   async productsByMerchant(@Request() req, @Response() res) {
     const { email } = req.user;
@@ -579,6 +387,7 @@ export class MerchantsController {
   }
 
   @Post('products-supplier')
+  @ApiTags('Product')
   @UseGuards(JwtAuthGuard)
   async getProductsBySupplier(
     @Body() productsBySupplierDto: ProductsBySupplierDto,
@@ -607,6 +416,7 @@ export class MerchantsController {
   */
 
   @Get('view-orders')
+  @ApiTags('Order')
   @UseGuards(JwtAuthGuard)
   async getOrdersByMerchant(@Request() req, @Response() res) {
     const { email } = req.user;
@@ -636,6 +446,7 @@ export class MerchantsController {
   }
 
   @Post('create-order')
+  @ApiTags('Order')
   @UseGuards(JwtAuthGuard)
   async createOrder(
     @Body() createOrderDto: CreateOrderDto,
@@ -681,6 +492,7 @@ export class MerchantsController {
   }
 
   @Post('delete-order')
+  @ApiTags('Order')
   @UseGuards(JwtAuthGuard)
   async deleteOrder(@Request() req) {
     console.log('req.body', req.body.id);
@@ -689,6 +501,7 @@ export class MerchantsController {
   }
 
   @Post('update-order')
+  @ApiTags('Order')
   @UseGuards(JwtAuthGuard)
   async updateOrder(@Body() updateOrderDto: UpdateOrderDto) {
     // console.log('updateOrderDto', updateOrderDto);
@@ -713,6 +526,7 @@ export class MerchantsController {
   */
 
   @Post('order-detail')
+  @ApiTags('Order Detail')
   @UseGuards(JwtAuthGuard)
   async getOrderDetailByOrder(
     @Request() req,
@@ -727,6 +541,7 @@ export class MerchantsController {
   }
 
   @Post('delete-order-detail')
+  @ApiTags('Order Detail')
   @UseGuards(JwtAuthGuard)
   async deleteOrderDetail(
     @Request() req,
@@ -740,6 +555,7 @@ export class MerchantsController {
   }
 
   @Post('update-order-detail')
+  @ApiTags('Order Detail')
   @UseGuards(JwtAuthGuard)
   // @UsePipes(ValidationPipe)
   async updateOrderDetail(
@@ -784,6 +600,7 @@ export class MerchantsController {
   */
 
   @Post('create-supplier')
+  @ApiTags('Supplier')
   @UseGuards(JwtAuthGuard)
   async createSupplier(
     @Body() createSupplierDto: CreateSupplierDto,
@@ -797,6 +614,7 @@ export class MerchantsController {
   }
 
   @Get('suppliers')
+  @ApiTags('Supplier')
   @UseGuards(JwtAuthGuard)
   async getSuppliersByMerchant(@Request() req: any, @Response() res: any) {
     const { email } = req.user;
@@ -809,6 +627,7 @@ export class MerchantsController {
   }
 
   @Post('delete-supplier')
+  @ApiTags('Supplier')
   @UseGuards(JwtAuthGuard)
   async deleteSupplier(@Body() deleteSupplierDto: DeleteSupplierDto) {
     const { supplierId } = deleteSupplierDto;
@@ -816,6 +635,7 @@ export class MerchantsController {
   }
 
   @Post('update-supplier')
+  @ApiTags('Supplier')
   @UseGuards(JwtAuthGuard)
   async updateSupplier(@Body() updateSupplierDto: UpdateSupplierDto) {
     return await this.suppliersService.update(updateSupplierDto);
@@ -834,6 +654,7 @@ export class MerchantsController {
   */
 
   @Post('create-purchase-order')
+  @ApiTags('Purchase Order')
   @UseGuards(JwtAuthGuard)
   async createPurchaseOrder(
     @Body() createPurchaseOrderDto: CreatePurchaseOrderDto,
@@ -905,6 +726,7 @@ export class MerchantsController {
 
   // Get Purchase Orders by Merchant
   @Get('merchant-orders')
+  @ApiTags('Purchase Order')
   @UseGuards(JwtAuthGuard)
   async getMerchantOrders(@Request() req: any, @Response() res: any) {
     const { email } = req.user;
@@ -921,6 +743,7 @@ export class MerchantsController {
   }
 
   @Post('delete-purchase-order')
+  @ApiTags('Purchase Order')
   @UseGuards(JwtAuthGuard)
   async deletePurchaseOrder(@Request() req) {
     console.log('req.body', req.body.id);
@@ -941,6 +764,7 @@ export class MerchantsController {
   */
 
   @Post('update-purchase-order-detail')
+  @ApiTags('Purchase Order Detail')
   @UseGuards(JwtAuthGuard)
   async updatePurchaseOrderDetail(
     @Request() req: any,
@@ -959,12 +783,13 @@ export class MerchantsController {
 
   /*
   _____________________
-  PURCHASE ORDER DETAIL
+  PURCHASE ORDER DETAIL@ApiTags('Customer')
   _____________________
   */
 
   // Get Single Product
   @Post('product')
+  @ApiTags('Product')
   @UseGuards(JwtAuthGuard)
   async findProduct(@Body() findProductDto: FindProductDto, @Response() res) {
     const { productId } = findProductDto;
@@ -985,6 +810,7 @@ export class MerchantsController {
   */
 
   @Post('create-customer')
+  @ApiTags('Customer')
   @UseGuards(JwtAuthGuard)
   @UsePipes(ValidationPipe)
   async createCustomerByMerchant(
@@ -1007,6 +833,7 @@ export class MerchantsController {
   }
 
   @Get('customers')
+  @ApiTags('Customer')
   @UseGuards(JwtAuthGuard)
   async getCustomersByMerchant(@Request() req: any, @Response() res: any) {
     const { email } = req.user;
@@ -1022,6 +849,7 @@ export class MerchantsController {
   }
 
   @Post('delete-customer')
+  @ApiTags('Customer')
   @UseGuards(JwtAuthGuard)
   async deleteCustomerByMerchant(
     @Body() deleteCustomerDto: DeleteCustomerDto,
@@ -1035,6 +863,7 @@ export class MerchantsController {
   }
 
   @Post('update-customer')
+  @ApiTags('Customer')
   @UseGuards(JwtAuthGuard)
   @UsePipes(ValidationPipe)
   async updateCustomerByMerchant(
@@ -1068,6 +897,7 @@ export class MerchantsController {
   */
 
   @Post('purchase-order')
+  @ApiTags('PDF Download Data')
   @UseGuards(JwtAuthGuard)
   async root(
     @Request() req: any,
@@ -1127,6 +957,7 @@ export class MerchantsController {
   */
 
   @Post('invoice')
+  @ApiTags('PDF Download Data')
   @UseGuards(JwtAuthGuard)
   async getInvoice(
     @Request() req: any,
@@ -1179,84 +1010,4 @@ export class MerchantsController {
   INVOICE
   _______
   */
-
-  /* IMG UPLOAD S3 */
-  @Post('upload')
-  @UseGuards(JwtAuthGuard)
-  @UsePipes(ValidationPipe)
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: memoryStorage(),
-    })
-  )
-  async uploadToS3(
-    @Body() createImageDto: CreateImageDto,
-    @Request() req: any,
-    @UploadedFile() file: Express.Multer.File,
-    @Response() res: any
-  ) {
-    const { email } = req.user;
-    const { supplierId } = createImageDto;
-
-    const foundMerchant = await this.merchantsService.findByEmail(email);
-    const foundSupplier = await this.suppliersService.findOne(supplierId);
-
-    console.log('merchant', foundMerchant);
-    console.log('foundSupplier', foundSupplier);
-    console.log('createImageDto', createImageDto);
-    console.log('req.file', req.file);
-
-    const { originalname, buffer, mimetype, fieldname } = req.file;
-
-    // AWS
-    const bucketName = this.configService.get('BUCKET_NAME');
-    const bucketRegion = this.configService.get('BUCKET_REGION');
-    const accessKey = this.configService.get('ACCESS_KEY');
-    const secretAccessKey = this.configService.get('SECRET_ACCESS_KEY');
-
-    // S3 Credentials
-    const s3 = new S3Client({
-      credentials: {
-        accessKeyId: accessKey,
-        secretAccessKey: secretAccessKey,
-      },
-      region: bucketRegion,
-    });
-
-    if (foundMerchant && foundSupplier) {
-      // Unique Filename when uploaded to S3 bucket
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const uniqueName = fieldname + '-' + uniqueSuffix + extname(originalname);
-
-      const params = {
-        Bucket: bucketName,
-        Key: uniqueName,
-        Body: buffer,
-        ContentType: mimetype,
-      };
-
-      console.log('params', params);
-      const command = new PutObjectCommand(params);
-
-      try {
-        await s3.send(command);
-        const savedProduct = await this.productsService.add(
-          foundMerchant,
-          foundSupplier,
-          {
-            ...createImageDto,
-            image: uniqueName,
-          }
-        );
-
-        return res.json({ CreatedProduct: [savedProduct] });
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      return 'merchant not found';
-    }
-
-    res.end();
-  }
 }

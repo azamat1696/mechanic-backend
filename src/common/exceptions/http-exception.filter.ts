@@ -9,17 +9,17 @@ import {
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: HttpException, host: ArgumentsHost) {
-    console.log(exception);
+    // console.log('exception', exception);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest();
     const status = exception.getStatus();
-    console.log('response', response);
+    // console.log('==>', exception.getResponse());
     response.status(status).json({
       statusCode: status,
-      message: 'my message',
-      timestamp: new Date().toISOString(),
       path: request.url,
+      data: exception.getResponse(),
+      timestamp: new Date().toISOString(),
     });
   }
 }

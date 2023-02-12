@@ -5,6 +5,7 @@ import {
   MinLength,
   IsInt,
   IsNumber,
+  IsNumberString,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -26,6 +27,22 @@ export class CreateProductDto {
 
   // @IsInt()
   // @IsNumber()
+  @IsNotEmpty()
+  @IsNumberString()
+  costPrice: number;
+
+  // @IsInt()
+  // @IsNumber()
+  @IsNotEmpty()
+  @IsNumberString()
+  retailPrice: number;
+
+  // @IsInt()
+  // @IsNumber()
+  @IsNotEmpty()
+  @IsNumberString()
+  minimum: number;
+
   @IsNotEmpty()
   supplierId: number;
 }
